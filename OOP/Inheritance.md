@@ -233,7 +233,7 @@ int main() {
 
 
 # Dynamic polymorphism
-- See [[Dynamic polymorphism]]
+- See [[DynamicPolymorphism]]
 
 # Friend
 ### Example 1

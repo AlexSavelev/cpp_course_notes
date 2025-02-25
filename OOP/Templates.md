@@ -199,7 +199,7 @@ void sort(...) { ... }
 ```
 
 # Overloading and specialization
-- см. [[Overloading & specialization]]
+- см. [[OverloadingAndSpecialization]]
 
 # Проблема зависимых имен
 
