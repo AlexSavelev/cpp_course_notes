@@ -181,7 +181,7 @@ int main() {
 	Base bb = d; // CE - про приватное наследование знает только наследник
 }
 ```
-==про приватное наследование знает только наследник== [Src](https://stackoverflow.com/questions/860339/what-is-the-difference-between-public-private-and-protected-inheritance)
+==TODO== про приватное наследование знает только наследник [Src](https://stackoverflow.com/questions/860339/what-is-the-difference-between-public-private-and-protected-inheritance)
 ### Обратный каст
 ```cpp
 Base b;

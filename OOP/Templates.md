@@ -289,6 +289,25 @@ void f(U x, V y) {
     }
 }
 ```
+
+### `remove_reference`
+```cpp
+template <typename T>
+struct remove_reference {
+	using type = T;
+};
+
+template <typename T>
+struct remove_reference<T&> {
+	using type = T;
+};
+
+template <typename T>
+struct remove_reference<T&&> {  // see move semantics
+	using type = T;
+};
+```
+
 ### `remove_const`
 - `CE` example
 ```cpp

@@ -136,7 +136,7 @@ private:
 ```
 
 #### SSO benchmark on Ubuntu
-![[SSO_benchmark.png]]
+![SSO benchmark](../assets/SSO_benchmark.png)
 #### std::string SSO
 [Source](https://stackoverflow.com/questions/27631065/why-does-libcs-implementation-of-stdstring-take-up-3x-memory-as-libstdc/28003328#28003328)
 
@@ -164,3 +164,116 @@ private:
 | S <= 23 | 23 < S < 256 | S >= 256 |
 | ------- | ------------ | -------- |
 | SSO     | as vector    | COW      |
+
+# `std::tuple`
+
+```cpp
+std::tuple<int, double, std::string> tup(1, 2.2, "Hello");
+```
+
+### Get items
+```cpp
+std::get<0>(tup);  // get by index
+std::get<double>(tup);  // get by type (get in tuple with two doubles is CE)
+```
+
+#### Cringe get
+```cpp
+struct Tuple {
+	std::string z;
+	double y;
+	int x;
+};
+
+int main() {
+	std::tuple<int, double, std::string> tup(1, 2.2, "Hello");
+	std::cout << reinterpret_cast<Tuple&>(tup).x;  // 1 but UB
+}
+```
+
+### Create tuple and unpack values
+- `auto tup = std::make_tuple(0, 1.1, "world");`
+
+```cpp
+auto tup = std::make_tuple(0, 1.1, "world");  // T = int
+std::tuple tup1 = {1, 2.2, "Hello"};  // deduction guide (from C++17)
+
+int x = 37;
+auto tup = std::make_tuple(x, 1.1, "world");  // T = int
+
+// unpack
+auto [x, y, z] = tup;
+
+// std::tie - makes tuple by Args&...
+int a = 37;
+double b = 1.1;
+std::string c = "lala";
+std::tie(a, b, c) = tup;  // makes 3-linked tuple and assigns to tup
+std::cout << x << ' ' << y << ' ' << z << '\n';
+```
+
+### Tuple cat
+- `std::tuple tup2 = std::tuple_cat(tup, tup1);`
+
+### `std::forward_as_tuple`
+### Каррирование
+- ==TODO== Perfect forwarding
+```cpp
+#include <iostream>
+#include <tuple>
+
+template <typename F, typename... Args>
+auto curry(F&& f, Args&& args) {
+	return [
+		ft = std::forward_as_tuple(std::forward<F>(f)),
+		argst = std::forward_as_tuple(std::forward<Args>(args)...)
+	]<typename... Kwargs>(Kwargs&&... kw) {
+		return std::apply(
+			std::get<0>(std::move(ft)),
+			std::tuple_cat(std::move(argst), std::forward_as_tuple(std::forward<Kwargs>(kw)...))
+		);
+	};
+}
+
+int main() {
+	auto f = [](int x, double y) { return x * y; }
+	auto g = curry(f, 10);
+	std::cout << g(2.2);
+}
+```
+
+
+
+deduction guide in C++17 ==TODO==
+tuples in C++11
+
+==TODO== fill
+
+```cpp
+#include <type_traits>
+
+template <typename T>
+T&& Forward(std::remove_reference<T>& value) {  // we can't accept rvalue
+  return static_cast<T&&>(value);
+}
+
+// forward<int&> -> int& && -> int& => int& forward(...)
+// forward<int> -> int && -> int&& => int&& forward(...)
+
+template <typename T>
+T&& Forward(std::remove_reference<T>&& value) {
+  return static_cast<T&&>(value);
+}
+
+template <typename T>
+void f(T&& value) {
+  Forward<T>(value);
+}
+
+int main() {
+  f(10);  // T=int
+  int x = 1;
+  f(x);  // T=int&
+}
+
+```

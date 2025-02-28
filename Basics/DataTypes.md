@@ -92,4 +92,18 @@ int& c = const_cast<int&>(b); // очень серьезный UB
 - `T` -> `[cv] T[&]`
 - `Derived&` -> `Base&`
 
+
+cv - qualifiers
+f(const int&)
+f(volatile int&)
+f(int)
+f(5)
+
 ==TODO== cv
+volatile size_t size;
+```cpp
+for (size_t i = 0; i < size; ++i) {
+ // ...
+}
+
+```
