@@ -23,8 +23,28 @@ int N::f(int x) { // Qualified ID
 }
 ```
 
-==TODO==https://stackoverflow.com/questions/4103756/what-is-a-nested-name-specifier
-https://stackoverflow.com/questions/7257563/what-are-qualified-id-name-and-unqualified-id-name
+### Definitions
+In informal terms, a _nested-name-specifier_ is the part of the _id_ that:
+- begins either at the very beginning of a _qualified-id_ or after the initial scope resolution operator (`::`) if one appears at the very beginning of the _id_ and
+- ends with the last scope resolution operator in the _qualified-id_.
+
+Very informally, an _id_ is either a _qualified-id_ or an _unqualified-id_. If the _id_ is a _qualified-id_, it is actually composed of two parts: a nested-name specifier followed by an _unqualified-id_.
+
+### Example
+```cpp
+struct A {
+    struct B {
+        void F();
+    };
+};
+```
+- `A` is an _unqualified-id_.
+- `::A` is a _qualified-id_ but has no _nested-name-specifier_.
+- `A::B` is a _qualified-id_ and `A::` is a _nested-name-specifier_.
+- `::A::B` is a _qualified-id_ and `A::` is a _nested-name-specifier_.
+- `A::B::F` is a _qualified-id_ and both `B::` and `A::B::` are _nested-name-specifiers_.
+- `::A::B::F` is a _qualified-id_ and both `B::` and `A::B::` are _nested-name-specifiers_.
+
 # Namespaces
 - `using` - механизм для более удобного обращения к неймспейсам
 - Также можно делать псевдонимы

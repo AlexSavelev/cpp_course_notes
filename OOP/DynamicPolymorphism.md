@@ -57,7 +57,21 @@ int main() {
 - Работает не только с ссылками но и с указателями
 - Механизм виртуальных функций работает только при полном совпадении сигнатур
 - Существует ключевое слово `final`, которое запрещает наследникам переопределять эту виртуальную функцию
-	- ==TODO== [SOO](https://stackoverflow.com/questions/29412412/does-final-imply-override)
+
+### `final` and `override`
+- [Source](https://stackoverflow.com/questions/29412412/does-final-imply-override)[S](https://github.com/isocpp/CppCoreGuidelines/issues/423)
+- See the examples:
+```cpp
+        void f()          final;  // (1)
+        void f() override final;  // (2)
+virtual void f() override final;  // (3)
+
+virtual void f()          final;  // (4)
+```
+- For _**(1)**_, `final` always requires a virtual function, and for `f` to be implicitly virtual, it must be overriding a virtual base class function. Hence _**(1)**_ and _**(3)**_ are equivalent.
+- _**(2)**_ obviously implies `virtual` so it is also equivalent to _**(1)**_/_**(3)**_.
+- _**(4)**_, however, is _not_ equivalent to any of the above. It simply does not require a virtual base class version of `f` for the reasons that _**(1)**_ does. (Which would also be pointless, if it did not have one.)
+
 
 ### Abstract classes
 - Это классы, в которых есть хотя бы один `pure virtual` метод (`virtual void foo() = 0;`)
@@ -369,4 +383,4 @@ int main() {
 
 
 ==TODO==
-==CHECK== [FUCK](https://stackoverflow.com/questions/860339/what-is-the-difference-between-public-private-and-protected-inheritance)
+CHECK [FUCK](https://stackoverflow.com/questions/860339/what-is-the-difference-between-public-private-and-protected-inheritance)

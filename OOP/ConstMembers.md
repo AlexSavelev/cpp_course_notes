@@ -45,6 +45,3 @@ struct {
 	}
 };
 ```
-
-
-==TODO== add Dolta's seminar listings

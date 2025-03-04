@@ -189,10 +189,34 @@ std::istream& operator>>(...) { ... }  // аналогично
 ```
 
 # User-defined literals
-- Also known as suffix operators
+Allows integer, floating-point, character, and string literals to produce objects of user-defined type by defining a user-defined suffix.
 - Since C++11
-- [cppref](https://en.cppreference.com/w/cpp/language/user_literal)
-==TODO== cppref check
+- [Source in cppref](https://en.cppreference.com/w/cpp/language/user_literal)
+- Also known as suffix operators
+
+### Allowed parameter lists
+1. `(const char*)`
+2. `(unsigned long long int)`
+3. `(long double)`
+4. `(char)`
+5. `(wchar_t)`
+6. `(char8_t)`
+7. `(char16_t)`
+8. `(char32_t)`
+9. `(const char*, std::size_t)`
+10. `(const wchar_t*, std::size_t)`
+11. `(const char8_t*, std::size_t)`
+12. `(const char16_t*, std::size_t)`
+13. `(const char32_t*, std::size_t)`
+
+- (1) Literal operators with this parameter list are the _raw literal operators_, used as fallbacks for integer and floating-point user-defined literals
+- (2) Literal operators with these parameter lists are the first-choice literal operator for user-defined integer literals
+- (3) Literal operators with these parameter lists are the first-choice literal operator for user-defined floating-point literals
+- (4-8) Literal operators with these parameter lists are called by user-defined character literals
+- (9-13) Literal operators with these parameter lists are called by user-defined string literals
+- Default arguments are not allowed
+
+### Example
 
 ```cpp
 #include <iostream>

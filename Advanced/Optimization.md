@@ -1,3 +1,4 @@
+Copy elision is a compiler optimization technique that eliminates unnecessary copying/moving of objects.
 # RVO, NRVO
 - _**Def:**_ RVO - Return Value Optimization
 - _**Def:**_ NRVO - Named Return Value Optimization

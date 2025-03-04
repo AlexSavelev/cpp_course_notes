@@ -10,14 +10,13 @@ Preprocessor -> Translation (Compiling) -> Assembling -> Linking
 - [More](https://ru.wikipedia.org/wiki/%D0%9F%D1%80%D0%B5%D0%BF%D1%80%D0%BE%D1%86%D0%B5%D1%81%D1%81%D0%BE%D1%80_%D0%A1%D0%B8)
 
 ### Препроцессором выполняются следующие действия
-- Замена соответствующих диграфов и триграфов на эквивалентные символы «#» и «\»
+- Замена соответствующих диграфов и триграфов на эквивалентные символы «`#`» и «`\`»
 - Удаление экранированных символов перевода строки
 - Замена строчных и блочных комментариев пустыми строками (с удалением окружающих пробелов и символов табуляции)
 - Вставка (включение) содержимого произвольного файла (`#include`)
 - Макроподстановки (`#define`)
 - Условная компиляция (`#if`, `#ifdef`, `#elif`, `#else`, `#endif`)
 - Вывод сообщений (`#warning`, `#error`)
-
 
 ### G++ preprocessor only
 - Using flag `-E`
@@ -72,7 +71,3 @@ Preprocessor -> Translation (Compiling) -> Assembling -> Linking
 ### `static`
 - Static functions can't be called outside the current `.cpp` file
 - Alternative: `namespace { ... }` - anonymous namespace
-
-
-
-==TODO== static&dynamic libs
