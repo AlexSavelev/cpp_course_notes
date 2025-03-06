@@ -46,7 +46,7 @@ int main() {
 # Can
 - Copy: `auto f = ...; auto ff = f;`
 	- CE if f contains local-fields: `[a]`
-- Move: coming soon...==TODO==
+- Move
 
 # Список захвата для класса
 - Верно и для функций
@@ -81,6 +81,15 @@ class S {
 };
 ```
 
+#### Захват по перемещению (Capture by Move)
+```cpp
+std::string str = "Hello world";
+
+auto lambda = [s = std::move(str)](){ std::cout << s << '\n'; };
+
+lambda();  // Hello world
+```
+
 #### Захват по константной ссылке
 ```cpp
 class S {
@@ -112,12 +121,16 @@ struct S {
 ```
 
 ### Example: Context
-==TODO== cppref
+- Конструкция `[=]` - захват ТОЛЬКО локальных переменных, так называемый local non static context
+- В данном примере:
+	- `b` честно захватится с конструкцией `[=]`
+	- `a` - переменная глобальной области видимости, `offset` до нее (ее данных) вычисляется в compile-time
+	- `c` - статическая переменная функции. Хранится в секции `data`, а не на стеке, и `offset` до нее также вычисляется в compile-time
+	- `sizeof(f) = 4` - всего 1 `int`
 ```cpp
 #include <iostream>
 
 int a = 0;
-
 
 auto foo() {
   int b = 1;
@@ -141,8 +154,13 @@ int main() {
 ```
 
 # Positive lambda hack
-- [About](https://stackoverflow.com/questions/18889028/a-positive-lambda-what-sorcery-is-this)
-- ==TODO==
+- _Closure type_ definition: The lambda expression is a prvalue expression of unique unnamed non-union non-aggregate class type, known as closure type, which is declared (for the purposes of ADL) in the smallest block scope, class scope, or namespace scope that contains the lambda expression. 
+- The `+` triggers a conversion to a plain old function pointer for the lambda
+	- The compiler sees the first lambda (`[]{}`) and generates a closure object according to §5.1.2 (`[expr.prim.lambda]`). As the lambda is a **non-capturing** lambda
+	- This is important as the unary operator `+` has a set of built-in overloads, specifically this one (see `[over.built]`): `T* operator+(T*);`
+	- And with this, it's quite clear what happens: When operator `+` is applied to the closure object, the set of overloaded built-in candidates contains a conversion-to-any-pointer and the closure type contains _exactly one candidate_: The conversion to the function pointer of the lambda.
+- [Source](https://stackoverflow.com/questions/18889028/a-positive-lambda-what-sorcery-is-this)
+
 ### Example
 ```cpp
 #include <iostream>
@@ -158,6 +176,7 @@ int main() {
   f3();
 }
 ```
+- In this example, the type of `f1` in `auto f1 = +[]{};` is therefore deduced to `int(*)(int)`. Now the second line is easy: For the second lambda/closure object, an assignment to the function pointer triggers the same conversion as in the first line. Even though the second lambda has a different closure type, the resulting function pointer is, of course, compatible and can be assigned.
 
 # Template lambdas
 ```cpp
@@ -187,7 +206,6 @@ int main() {
 ```
 
 # Lambda overload
-==TODO== think about
 ```cpp
 #include <iostream>
 #include <variant>

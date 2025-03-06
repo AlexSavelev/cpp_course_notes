@@ -248,6 +248,9 @@ void f(T&& x) {
 - Цитата Мейерса: "If a variable or parameter is declared to have type `T&&` for some deduced type `T`, that variable or parameter is a universal reference."
 - _**Note**_ Вместо `T` может быть любое название шаблона
 - _**Note**_ Для вариадиков тоже работает
+- Универсальные ссылки служат фундаментом для двух других крупных фич:
+	- move-семантика
+	- perfect forwarding, возможность передавать аргументы, которые являются либо lvalue, либо rvalue
 
 ### Правила сжатия ссылок (reference collapsing)
 - В C++ не допускается взятие ссылки на ссылку, но такое возникакает при шаблонных подстановках

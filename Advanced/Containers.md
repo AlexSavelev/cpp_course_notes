@@ -113,7 +113,8 @@ _**Sol**_: создаем класс `BaseNode { *next, *prev }`, а `Node` - н
 - Смешная история:
 	- `if (data[size_] != 0) { data[size_] = '\0'; }`
 	- Это UB: read of unitialized data
-	- Причем работает на 192 символах (или что-то типа того) станица памяти, физическая страница ==TODO== what is it
+	- Причем работает на 192 символах (станица памяти, физическая страница)
+	- Лучше не вникать
 
 ### SSO implementation
 - _**SSO**_ - is the Short / Small String Optimization

@@ -21,7 +21,7 @@
 | 16  | [Exceptions](Basics/Exceptions.md)                                                                     | 1                |     |
 | 17  | [Containers](Advanced/Containers.md)                                                                   | 2                |     |
 | 18  | [Memory](Advanced/Memory.md)<br>- [Allocators](Advanced/Allocators.md)                                 | 3                |     |
-| 19  | [Move semantics](Advanced/MoveSemantics.md)                                                            | 4                |     |
+| 19  | [Move semantics](Advanced/MoveSemantics.md)                                                            | 5                |     |
 |     |                                                                                                        |                  |     |
 |     |                                                                                                        |                  |     |
 |     |                                                                                                        |                  |     |
@@ -35,6 +35,6 @@
 | 1   | [Testing](Misc/Testing.md)                  | 2                |
 | 2   | [Evaluation order](Misc/EvaluationOrder.md) | 3                |
 |     | [Optimization](Advanced/Optimization.md)    | 2                |
-|     | [Cringe](Misc/Cringe.md)                    | 5                |
+|     | [Cringe](Misc/Cringe.md)                    | 4                |
 |     |                                             |                  |
 |     |                                             |                  |

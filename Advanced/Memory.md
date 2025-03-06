@@ -6,7 +6,8 @@
 - file mappings: DLL, .so
 ### Heap
 ### BSS segment
-- uninitialized static vars: `static char* username;`  ==TODO==
+- BSS - block starting symbol
+- uninitialized static vars: `static char* username;`
 ### Data segment
 - static vars inst. by program: `static char* a = "hello";` (статические и глобальные переменные, некоторые константы)
 ### Text segment (ELF)
@@ -18,6 +19,44 @@
 - На стек кладутся адреса возвратов при заходе в функции
 - stack overflow - переполнение стека
 
+# About BSS
+- BSS - block starting symbol
+	- Joke - Better Save Space
+
+### Зачем нужен BSS
+The reason is to reduce program size. Imagine that your C program runs on an embedded system, where the code and all constants are saved in true ROM (flash memory). In such systems, an initial "copy-down" must be executed to set all static storage duration objects, before `main()` is called. It will typically go like this pseudo:
+```cpp
+for(i=0; i<all_explicitly_initialized_objects; i++)
+{
+  .data[i] = init_value[i];
+}
+
+memset(.bss, 
+       0, 
+       all_implicitly_initialized_objects);
+```
+Where `.data` and `.bss` are stored in RAM, but `init_value` is stored in ROM. If it had been one segment, then the ROM had to be filled up with a lot of zeroes, increasing ROM size significantly.
+
+RAM-based executables work similarly, though of course they have no true ROM.
+
+Also, `memset` is likely some very efficient inline assembler, meaning that the startup copy-down can be executed faster.
+
+- Иначе говоря, .bss - это некого рода оптимизация, делающая исполняемые файлы меньше и быстрее загружаемыми
+- [Source](https://stackoverflow.com/questions/9535250/why-is-the-bss-segment-required)
+
+К слову, в книге Джеффа Дантеманна "[Assembly Language Step-by-Step: Programming with Linux](https://jagdishkapadnis.wordpress.com/wp-content/uploads/2015/05/assembly-language-step-by-step-programming-with-linux-3rd-edition.pdf)" секции **.data** и **.bss** соответственно определяются следующим образом:
+
+1. **.data**:
+> The **.data** section contains data definitions of initialized data items. Initialized data is data that has a value before the program begins running. These values are part of the executable file. They are loaded into memory when the executable file is loaded into memory for execution.
+> 
+> The important thing to remember about the .data section is that the more initialized data items you define, the larger the executable file will be, and the longer it will take to load it from disk into memory when you run it.
+
+2. **.bss**
+> Not all data items need to have values before the program begins running. When you’re reading data from a disk file, for example, you need to have a place for the data to go after it comes in from disk. Data buffers like that are defined in the **.bss** section of your program. You set aside some number of bytes for a buffer and give the buffer a name, but you don’t say what values are to be present in the buffer.
+> 
+> There’s a crucial difference between data items defined in the .data section and data items defined in the .bss section: data items in the .data section add to the size of your executable file. Data items in the .bss section do not. A buffer that takes up 16,000 bytes (or more, sometimes much more) can be defined in .bss and add almost nothing (about 50 bytes for the description) to the executable file size.
+
+// TL;DR =)
 # Dynamic memory
 - Иначе говоря, куча
 - operator new
@@ -37,8 +76,7 @@
 	- `delete[] ptr;`
 - C-style arrays
 	- `int arr[10]; // sizeof(arr) = 40`
-	
-`std::addressof(a)` ==TODO==
+
 # `new`, `delete` overloading
 
 ```cpp
@@ -52,7 +90,6 @@ void operator delete(void* p) noexcept {
 	free(p);
 }
 ```
-==TODO== why noexcept
 _**Note**_ Перегружать глобальный `new` - плохо
 
 ### `new` full implementation

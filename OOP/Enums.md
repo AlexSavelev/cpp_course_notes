@@ -22,6 +22,7 @@ enum class Color {
 Color a = Color::BLUE;
 ```
 # Choose type of consts in enums
+- Называются также сторого типизированными, или типобезопасными, перечислениями
 ```cpp
 enum class Color : uint8_t {
 	RED,

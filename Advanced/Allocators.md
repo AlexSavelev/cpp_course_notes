@@ -9,7 +9,7 @@
 template <typename T>
 struct Allocator {
 	T* allocate(size_t n) {
-		return ::operator new(n * sizeof(T));  // align?
+		return ::operator new(n * sizeof(T), static_cast<std::align_val_t>(alignof(T)));  // see alignment
 	}
 	
 	void deallocate(T* ptr, size_t) {
@@ -17,7 +17,7 @@ struct Allocator {
 	}
 	
 	template <typename... Args>
-	void construct(T* ptr, const Args&&...) { // Args&&`
+	void construct(T* ptr, Args&&... args) { // Args&&`
 	    new(ptr) T(args...); // std::forward(args)
 	}
 
@@ -26,7 +26,6 @@ struct Allocator {
 	}
 }
 ```
-==TODO== + align?
 
 # `allocator_traits`
 - [See more](https://en.cppreference.com/w/cpp/memory/allocator_traits)
@@ -271,6 +270,3 @@ pmr::vector<int> v = f();  // assign f() allocator quickly
 pmr::vector<int> u;  // creates own allocator
 u = f();  // ?! - different behaviour
 ```
-
-
-==TODO== Открытая, закрытая адресация

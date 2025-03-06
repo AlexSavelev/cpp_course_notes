@@ -39,27 +39,67 @@ Definition: `return_type function_name(ArgType1 arg1, ArgType2 arg2) { my_code }
 	- `int add_nums(int count, ...) { ... }`
 
 ### Default arguments in general
-- The default arguments for functions are not bound to the function itself, but to the **calling context**: defaults declared for for the function in the scope in which it is called will be used (See C++ standard, `[dcl.fct.default]`) ==TODO== WTF
+- The default arguments for functions are not bound to the function itself, but to the **calling context**: defaults declared for the function in the scope in which it is called will be used (See C++ standard, `[dcl.fct.default]`) 
 
 ```cpp
 #include <iostream>
 
-void f(int a=1);  // forward declaration with a default value for the compilation unit
+void f(int a = 1);  // forward declaration with a default value for the
+// compilation unit
 
 void f(int a) {  // definition
-    cout<<a<<endl; 
+  std::cout << a << '\n';
 }
 
 void g() {
-    void f(int a=2);  // declaration in the scope of g
-    f();
+  void f(int a = 2);  // declaration in the scope of g
+  f();
 }
 
 int main() {
-    f();  // uses general default => 1
-    g();  // uses default defined in g => 2
-    return 0;
+  f();  // uses general default => 1
+  g();  // uses default defined in g => 2
+  return 0;
 }
+```
+
+- С конструкциями типа:
+```cpp
+struct S {
+  friend void f(int a = 3);
+  static void h() { f(); }
+};
+```
+- или добавлением еще одного объявления будет CE
+
+- Example from `[dcl.fct.default]`
+```cpp
+void g(int = 0, ...);  // OK, ellipsis is not a parameter so it can follow a
+                       // parameter with a default argument
+
+void f(int, int);
+void f(int, int = 7);
+
+void h() {
+  f(3);                  // OK, calls f(3, 7)
+  void f(int = 1, int);  // error: does not use default from surrounding scope
+}
+
+void m() {
+  void f(int, int);      // has no defaults
+  f(4);                  // error: wrong number of arguments
+  void f(int, int = 5);  // OK
+  f(4);                  // OK, calls f(4, 5);
+  void f(int, int = 5);  // error: cannot redefine, even to same value
+}
+void n() {
+  f(6);  // OK, calls f(6, 7)
+}
+template <class... T>
+struct C {
+  void f(int n = 0, T...);
+};
+C<int> c;  // OK, instantiates declaration void C::f(int n = 0, int)
 ```
 
 # ODR - one definition rule

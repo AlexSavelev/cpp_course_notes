@@ -42,7 +42,9 @@ int main() {
 ```
 - Examples
 	- Evaluation order
-	- Whether identical [string literals](https://en.cppreference.com/w/cpp/language/string_literal "cpp/language/string literal") are distinct ==TODO==
+	- Whether identical [string literals](https://en.cppreference.com/w/cpp/language/string_literal "cpp/language/string literal") are distinct
+		- The compiler is allowed, but not required, to combine storage for equal or overlapping string literals. That means that identical string literals may or may not compare equal when compared by pointer.
+		- `[lex.string]` Whether all string literals are distinct (that is, are stored in nonoverlapping objects) and whether successive evaluations of a string-literal yield the same or a different object is unspecified.
 - Depends on compiler
 - Is not documented
 - Is not in C++ standard
@@ -64,7 +66,37 @@ int main() {
 	- `[defns.well.formed]` C++ program constructed according to the syntax rules, diagnosable semantic rules, and the one-definition rule
 - no right C++ program
 
+```cpp
+const int size = 4;
+
+void expand() {
+    // ill-formed: Modifying a const variable.
+    size = 9;
+}
+```
+- The above program is ill-formed because it tries to modify a const variable, and the compiler reports a compile-time error and refuses to produce a program. The plain vanilla ill-formed programs aren’t scary because the compiler lets you know that you broke a rule and typically refuses to let you proceed until you fix it.
+
 # Ill-formed, nodiagnostic required (IFNDR)
 - The program has semantic errors which may not be diagnosable in general case (e.g. violations of the ODR or other errors that are only detectable at link time).
-- [More about](https://devblogs.microsoft.com/oldnewthing/20240802-00/?p=110091)  ==TODO==
+- These are programs which are ill-formed, but for which the standard does not require the compiler to report an error. The compiler is welcome to do so if it chooses, but it is also permitted to remain silent. In practice, IFNDR is used to describe things which are “bad” but which compilers are not equipped to detect.
+- For example, if you have two translation units (standard-speak for “a .cpp file”), both of them must agree on the bodies of any inline functions.
+```cpp
+// file1.cpp
+
+inline int magic() { return 42; }
+int get_value() { return magic(); }
+
+// file2.cpp
+
+extern int get_value();
+inline int magic() { return 99; }
+
+int main(int argc, char** argv) {
+    if (argc > 1) return get_value();
+    return 0;
+}
+```
+- In the above example, we have a project that consists of two .cpp files. The two files disagree on what the `int magic()` inline function does, which is a category of IFNDR. The compiler is permitted but not required to detect this mismatch, and if you run the resulting program, the results are undefined: If you run the resulting program with a command line argument, the `get_value()` function might return 42. It might return 99. It might return 31415. It might reformat your hard drive. It might hang.
+- Even worse, even if you run the program with no command line options (so that `get_value()` is never called), the results are _still_ undefined. It could still reformat your hard drive.
+- [Source](https://devblogs.microsoft.com/oldnewthing/20240802-00/?p=110091)
 

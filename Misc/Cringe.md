@@ -1,4 +1,20 @@
-- [Source](https://github.com/0xd34df00d/you-dont-know-cpp) ==TODO== r on release
+
+# 0. Переопределение ключевых слов
+- Управляем доступом к библиотеке без её изменения
+```cpp
+#define public private
+#include "mylibrary.h"
+#undef private
+```
+
+- Или просто hot-fix 01/04/2025
+```cpp
+#define true false
+#define else
+#define int float
+#define float char
+```
+
 
 # 1. When is this function safe or unsafe to use?
 ```cpp
@@ -24,7 +40,53 @@ T mkT2() { return T {}; }
 ```
 ### Answer
 Besides the obvious difference in handling of `explicit` vs `nonexplicit` default constructors, consider `std::mutex` and C++14 vs C++17.
-==TODO== ans
+
+```cpp
+template <typename T>
+T mkT1() {
+  return {};
+}
+
+template <typename T>
+T mkT2() {
+  return T{};
+}
+
+struct Explicit { explicit Explicit() {} };
+struct Implicit { Implicit() {} };
+
+int main() {
+  mkT1<Explicit>();  // CE: converting to ‘Explicit’ from initializer list would use explicit constructor ‘Explicit::Explicit()’
+  mkT2<Explicit>();  // OK
+
+  mkT1<Implicit>();  // OK
+  mkT2<Implicit>();  // OK
+}
+```
+
+These have _almost_ exactly the same effect:
+- `T x = { 1, 2, 3 };`
+- `T x { 1, 2, 3 };`
+Technically the version with `=` is called _copy-list-initialization_ and the other version is _direct-list-initialization_ but the behaviour of both of those forms is specified by the _list-initialization_ behaviour.
+
+The differences are:
+- If _copy-list-initialization_ selects an `explicit` constructor then the code is ill-formed (as stated in 13.3.1.7 `[over.match.list]`)
+- If `T` is `auto`, then:
+    - _copy-list-initialization_ deduces `std::initializer_list<Type_of_element>`
+    - _direct-list-initialization_ only allows a single element in the list, and deduces `Type_of_element`.
+
+`T obj = T{...}` (excluding `auto`) is exactly the same as `T obj{...}`, since C++17, i.e. _direct-list-initialization_ of `obj`. Prior to C++17 there was _direct-list-initialization_ of a temporary, and then copy-initialization of `obj` from the temporary.
+
+This is a true elision, whereby just writing `T{}` doesn't really create a `T`, but instead says "I want a `T`", and an actual temporary is "materialised" only if/when it needs to be.
+
+Redundant utterances of this fact are effectively collapsed into one, so despite screaming "I want a `T`! I want a `T`! I want a `T`! I want a `T`!" the child still only gets one `T` in the end.
+
+So, in C++17, `T obj = T{...}` is literally equivalent to `T obj{...}`.
+
+- [See more about copy elision](https://en.cppreference.com/w/cpp/language/copy_elision)
+> In the initialization of an object, when the initializer expression is a prvalue of the same class type (ignoring cv-qualification) as the variable type _[..]_
+
+- [Source](https://stackoverflow.com/questions/60805366/object-initialization-syntax-in-c-t-obj-vs-t-obj)
 
 # 3. Is this code valid?
 ```cpp
