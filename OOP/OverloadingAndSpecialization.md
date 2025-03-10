@@ -129,7 +129,7 @@ template<> // ERROR: explicit specialization of sort(Array<String>)
 void sort<String>(Array<String>& v); // after implicit instantiation
 ```
 
-- A template specialization that was declared but not defined can be used just like any other [incomplete type](https://en.cppreference.com/w/cpp/language/incomplete_type "cpp/language/incomplete type") (e.g. pointers and references to it may be used): ==TODO==
+- A template specialization that was declared but not defined can be used just like any other incomplete type (e.g. pointers and references to it may be used):
 ```cpp
 template<class T> // primary template
 class X;
@@ -162,7 +162,7 @@ template<> void h<int>(int i) {
 }
 ```
 
-- When specializing a function template, its template arguments can be omitted if [template argument deduction](https://en.cppreference.com/w/cpp/language/template_argument_deduction "cpp/language/template argument deduction") can provide them from the function arguments:==TODO==
+- When specializing a function template, its template arguments can be omitted if template argument deduction can provide them from the function arguments:
 ```cpp
 template<class T>
 class Array { /*...*/ };
@@ -453,7 +453,7 @@ A<int*, int*, 2> a5; // error: matches #2 (T = int, T2 = int*, I= 2)
 ```
 - Informally "A is more specialized than B" means "A accepts a subset of the types that B accepts".
 
-- The function templates are then ranked as if for [function template overloading](https://en.cppreference.com/w/cpp/language/function_template#Function_template_overloading "cpp/language/function template"). ==TODO==
+- The function templates are then ranked as if for function template overloading
 ```cpp
 template<int I, int J, class T> struct X {}; // primary template
 

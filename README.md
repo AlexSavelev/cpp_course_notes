@@ -22,7 +22,7 @@
 | 17  | [Containers](Advanced/Containers.md)                                                                   | 2                |     |
 | 18  | [Memory](Advanced/Memory.md)<br>- [Allocators](Advanced/Allocators.md)                                 | 3                |     |
 | 19  | [Move semantics](Advanced/MoveSemantics.md)                                                            | 5                |     |
-|     |                                                                                                        |                  |     |
+| 20  | [Placeholder type specifiers](Advanced/Placeholders.md)                                                | 2                |     |
 |     |                                                                                                        |                  |     |
 |     |                                                                                                        |                  |     |
 |     |                                                                                                        |                  |     |
@@ -33,7 +33,8 @@
 | --- | ------------------------------------------- | ---------------- |
 | 0   | [Attachments](Misc/Attachments.md)          | -                |
 | 1   | [Testing](Misc/Testing.md)                  | 2                |
-| 2   | [Evaluation order](Misc/EvaluationOrder.md) | 3                |
+| 2   | [Tuple](Misc/Tuple.md)                      | 3                |
+|     | [Evaluation order](Misc/EvaluationOrder.md) | 3                |
 |     | [Optimization](Advanced/Optimization.md)    | 2                |
 |     | [Cringe](Misc/Cringe.md)                    | 4                |
 |     |                                             |                  |

@@ -164,12 +164,12 @@ PoolAlloc alloc2 = alloc1;
 	- Говорит, надо ли при копировании/перемещении/swap'а объекта перетягивать и аллокатор (pool allocator for example)
 	- Но все равно аллокатор перетягиваются, если аллокаторы не равны:
 ```cpp
-		S& operator=(other) {
-			if(p_o_c_c_a || (!is_always_equal && alloc != other.alloc)) {
-				alloc = other.alloc;
-			}
-			...
-		} // this cringe + million of try-catch
+S& operator=(other) {
+	if(p_o_c_c_a || (!is_always_equal && alloc != other.alloc)) {
+		alloc = other.alloc;
+	}
+	...
+} // this cringe + million of try-catch
 ```
 
 # Полиморфные аллокаторы

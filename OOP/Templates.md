@@ -175,6 +175,9 @@ const int x = 10;
 std::array<int, x> arr1; // OK (compile-time const)
 ```
 
+#### `auto` parameters
+- See `auto` templates in Templates page
+
 ### Шаблонные параметры шаблонов
 - Например, если пишем свой `Stack` и ходим передавать в шаблонах, какой контейнер использовать в качестве адаптера
 
@@ -686,7 +689,7 @@ int main() {
 ==TODO== Friend inj, 
 
 # `auto` templates
-- From C++17
+- Since C++17
 - [Source](https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0127r1.html)
 An `auto` keyword in a template parameter can be used to indicate a non-type parameter the type of which is deduced at the point of instantiation. It helps to think of this as a more convenient way of writing:
 

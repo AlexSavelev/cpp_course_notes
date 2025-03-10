@@ -242,7 +242,7 @@ int main() {
 	// Output: 123, 12, 23
 }
 ```
-==TODO== why?
+
 ### Проблема ромбовидного наследования
 ```cpp
 struct Granny { int x; };
@@ -352,7 +352,82 @@ int main() {
 ```
 
 # Dependent names
-==TODO== def from STD
+Dependent names are characterized by a **dependency** on a template argument.
+
+```cpp
+#include <vector>
+
+void NonDependent() {
+  //You can access the member size_type directly.
+  //This is precisely specified as a vector of ints.
+
+  typedef std::vector<int> IntVector;  
+  IntVector::size_type i;
+
+  /* ... */
+}
+
+template <class T>
+void Dependent() {
+  // Now the vector depends on the type T. 
+  // Need to use typename to access a dependent name.
+
+  typedef std::vector<T> SomeVector;
+  typename SomeVector::size_type i;
+
+  /* ... */
+}
+
+int main() {
+  NonDependent();
+  Dependent<int>();
+  return 0;
+}
+```
+
+This is an example of a peculiar situation regarding the use of dependent names which appears quite frequently. Sometimes the rules governing the use of dependent names are not what one might instinctively expect.
+For instance, if you have a dependent class which derives from a depenent base, but within an scope in which a name from the base class apparently doesn't depent on the template, you might get a compiler error just like below.
+```cpp
+#include <iostream>
+
+template <class T>
+class Dependent {
+ protected:
+  T data;
+};
+
+template <class T>
+class OtherDependent : public Dependent<T> {
+ public:
+  void printT() const { 
+    std::cout << "T: " << data << std::endl; // ERROR
+  }
+};
+
+int main() {
+  OtherDependent<int> o;
+  o.printT();
+  return 0;
+}
+```
+
+This error happens because the compiler will not lookup name `data` inside the base class template since it doesn't dependent on `T` and, consequently, it is not a depedent name. The ways to fix are using `this` or explicitly telling the dependent base class template:
+
+```cpp
+std::cout << "T: " << this->data << std::endl; // Ok now.
+std::cout << "T: " << Dependent<T>::data << std::endl; // Ok now.
+```
+
+or placing `using` declaration:
+```cpp
+template <class T>
+class OtherDependent : public Dependent<T> {
+    using Dependent<T>::data; // Ok now.
+    ...
+};
+```
+
+- [Source](https://stackoverflow.com/questions/1527849/how-do-you-understand-dependent-names-in-c)
 ### Example 1
 ```cpp
 #include <iostream>
@@ -378,7 +453,6 @@ int main() {
   d.bar();
 }
 ```
-- В случае `independent name` компилятор будет искать совпадения: будет сначала искать в scope'е `bar`, затем в `Derived`, затем пойдет в `global` scope, затем опустится в `Base<T>`
 
 ### Example 2
 ```cpp
@@ -405,53 +479,5 @@ struct Derived : Base<T> {
 int main() {
 	Derived<int> d;
 	d.bar();
-}
-```
-
-### Example 3 (without templates)
-==TODO== WTF
-```cpp
-#include <iostream>
-
-  
-
-void foo() { std::cout << "Global\n"; }
-
-  
-
-struct Base {
-
-void foo() { std::cout << "Base\n"; }
-
-};
-
-  
-
-// void foo() { std::cout << "Global\n"; } // is the same that foo firstly
-
-  
-
-struct Derived {
-
-void bar() {
-
-foo(); // foo -independent name
-
-Base::foo(); // foo - dependent name
-
-this->foo(); // this - dependent name
-
-}
-
-};
-
-  
-
-int main() {
-
-Derived d;
-
-d.bar();
-
 }
 ```
