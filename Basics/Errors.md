@@ -30,6 +30,7 @@
 
 # UB - unspecified behavior
 - `[defns.unspecified]` behavior, for a well-formed program construct and correct data, that depends on the implementation
+- В отличии от implementation defined, разработчики систем/компиляторов не обязаны в документации это поведение описывать
 - The behavior of the program varies between implementations, and the conforming implementation is not required to document the effects of each behavior.
 ```cpp
 void f() { std::cout << 1; }
@@ -100,3 +101,6 @@ int main(int argc, char** argv) {
 - Even worse, even if you run the program with no command line options (so that `get_value()` is never called), the results are _still_ undefined. It could still reformat your hard drive.
 - [Source](https://devblogs.microsoft.com/oldnewthing/20240802-00/?p=110091)
 
+
+
+==TODO== https://en.cppreference.com/w/cpp/language/sfinae

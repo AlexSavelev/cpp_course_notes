@@ -21,18 +21,91 @@ int main() {
 
 ### Example 2
 ```cpp
-struct Base {
-	void foo() { std::cout << 1; }
+#include <iostream>
+
+struct A {
+  void foo() { std::cout << "A::foo()\n"; }
+
+  void foo(double) { std::cout << "A::foo(double)\n"; }
 };
 
-struct Derived : Base {
-	void foo(int) { std::cout << 2; }
+struct B : public A {
+  void foo(int) { std::cout << "B::foo(int)\n"; }
+};
+
+struct C : public A {
+  using A::foo;
+
+  void foo(int) { std::cout << "C::foo(int)\n"; }
+};
+
+struct D : public A {
+  using A::foo;
+  void foo() { std::cout << "D::foo()\n"; }
+};
+
+struct E : public A {
+ private:
+  void foo(int) { std::cout << "E::foo(int)\n"; }
 };
 
 int main() {
-	Derived d;
-	std::cout << d.foo(); // CE - Derived затмил Base::foo()
-	// solution: Base: protected/public foo; Derived: using Base::foo;
+  B b;
+  // b.foo();  // No name: затмили foo()
+  b.A::foo();
+  b.foo(10);
+
+  C c;
+  c.foo();
+  c.foo(10);
+  c.foo(3.2);
+
+  D d;
+  d.foo();
+
+  E e;
+  // e.foo(100); // -> foo(int) - private
+}
+```
+
+#### Example 3
+```cpp
+#include <iostream>
+
+struct A {
+  void foo() { std::cout << "A\n"; }
+};
+
+struct B : public A {
+  void foo() { std::cout << "B\n"; }
+  void bar() {}
+};
+
+struct C : private A {};
+
+int main() {
+  A a;
+  B b;
+  C c;
+
+  a = b;  // Можно, срезка при копировании
+  // b = a; Нет
+  // c = a; Нет
+  // a = c; Нет
+
+  A* aptr1 = &b;
+  aptr1->foo();
+  b.foo();
+
+  // A* aptr2 = &c;
+  A& aref = b;
+  aref.foo();
+
+  B* bptr = &b;
+  A* ap = bptr;
+
+  // bptr = ap;
+  bptr = static_cast<B*>(ap);  // работает, но аккуратно
 }
 ```
 
@@ -47,6 +120,12 @@ struct Derived : public Base {};
 | public base members    | public             | protected             | private             |
 | protected base members | protected          | protected             | private             |
 | private base members   | not accessible     | not accessible        | not accessible      |
+
+| Inheritance       | Approximate meaning             |
+| ----------------- | ------------------------------- |
+| `B : public A`    | `B` является `A`                |
+| `B : protected A` | `B` является `A` в узких кругах |
+| `B : private A`   | `B` реализуется посредством `A` |
 
 Check the example:
 ```cpp
@@ -73,6 +152,76 @@ The same happens with public, private and protected inheritance. Let's consider 
 
 Иначе говоря, про приватное наследование знает только наследник
 - [Source](https://stackoverflow.com/questions/860339/what-is-the-difference-between-public-private-and-protected-inheritance)
+
+#### Example 1
+- `A` <- public <- `B` <- public <- `C`
+
+| A members     | B accessible | C accessible |
+| ------------- | ------------ | ------------ |
+| `public x`    | `public x`   | `public x`   |
+| `protected y` | `private y`  | N/A          |
+| `private z`   | N/A          | N/A          |
+==TODO== check for
+
+#### Example 2
+```cpp
+#include <iostream>
+
+struct A {
+ public:
+  int x = 0;
+
+ protected:
+  int y = 10;
+
+ private:
+  int z = 20;
+};
+
+struct B : public A {
+  void foo() {
+    std::cout << x << '\n';  // OK
+    std::cout << y << '\n';  // OK
+    // std::cout << z << '\n';  // CE
+  }
+};
+
+struct C : private A {
+  void foo() {
+    std::cout << x << '\n';  // OK
+    std::cout << y << '\n';  // OK
+    // std::cout << z << '\n';  // CE
+  }
+};
+
+struct D : protected A {
+  void foo() {
+    std::cout << x << '\n';  // OK
+    std::cout << y << '\n';  // OK
+    // std::cout << z << '\n';  // CE
+  }
+};
+
+struct B1 : public B {};
+
+int main() {
+  B b;
+  std::cout << b.x << '\n';  // OK
+  // std::cout << b.y << '\n'; // CE
+  // std::cout << b.z << '\n'; // CE
+
+  C c;
+  // std::cout << c.x << '\n'; // CE
+  // std::cout << c.y << '\n'; // CE
+  // std::cout << c.z << '\n'; // CE
+
+  D d;
+  // std::cout << d.x << '\n'; // CE
+  // std::cout << d.y << '\n'; // CE
+  // std::cout << d.z << '\n'; // CE
+}
+```
+
 # Расположение объектов в памяти при наследовании
 ```cpp
 class Base {

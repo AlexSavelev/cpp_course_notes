@@ -47,7 +47,7 @@ int main() {
 	bool b_d = static_cast<bool>(d);    // OK, явное преобразование, вы знаете, что делаете
 }
 ```
-
+- Может принимать `constexpr`-выражение: `explicit(1 == 2)`
 ### Initializer list
 - Будет проинициализировано в порядке указания полей в самом классе
 - `Student(...) : name_(name), grade_(grade) { ... }`
@@ -143,7 +143,7 @@ int main() {
 
 
 ==TODO== ADL source rasshar
-==TODO== friend ADL [SOF](https://stackoverflow.com/questions/23831077/why-does-friend-function-found-successfully-via-adl) and [GL](https://gitlab.com/yaishenka/cpp_course/-/blob/main/sems/03_libs_and_ADL/05_friend_ADL.cpp?ref_type=heads) and [GL2](https://gitlab.com/yaishenka/cpp_course/-/blob/main/sems/03_libs_and_ADL/06_cringe.cpp?ref_type=heads)
+==TODO== friend ADL [SOF](https://stackoverflow.com/questions/23831077/why-does-friend-function-found-successfully-via-adl) and [GL](https://gitlab.com/yaishenka/cpp_course/-/blob/main/sems/03_libs_and_ADL/05_friend_ADL.cpp?ref_type=heads) and [GL2](https://gitlab.com/yaishenka/cpp_course/-/blob/main/sems/03_libs_and_ADL/06_cringe.cpp?ref_type=heads) and [GL3](https://gitlab.com/Wanaphi/mipt_cpp_cs_seminars/-/blob/main/c_plus_plus_/02_operator_overloading/07_friend_ADL.cpp?ref_type=heads)
 
 # Static class members
 
@@ -186,4 +186,24 @@ private:
 	Singleton() { ... } // private
 	static Singleton* obj_;
 };
+```
+
+# Access modifiers
+- Проверка на доступность осуществляется после выбора перегрузки
+
+```cpp
+#include <iostream>
+
+struct S {
+  void foo(int) { std::cout << "int\n"; }
+
+ private:
+  void foo(bool) { std::cout << "double\n"; }
+};
+
+int main() {
+  S s;
+  s.foo(3);
+  s.foo(true);  // CE
+}
 ```

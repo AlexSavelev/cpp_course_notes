@@ -17,7 +17,7 @@
 
 # Priorities
 - [Article](https://en.cppreference.com/w/cpp/language/operator_precedence)
-
+==TODO==
 # Spaceship operator
 ```cpp
 #include <compare>
@@ -110,7 +110,7 @@ int main() {
 - Бинарные операторы выражаем через версию с присваиванием (`+` => `+=`)
 
 # Comparison operator
-- Делаем вне класса
+- Лучше делать вне класса
 - `std::rel_ops` творит чудеса
 ```cpp
 #include <iostream>
@@ -130,6 +130,44 @@ int main() {
   using namespace std::rel_ops;
   std::cout << (a == b) << '\n';
   std::cout << (a != b) << '\n';
+}
+```
+
+```cpp
+#include <iostream>
+#include <utility>
+
+struct S {
+  bool operator==(const S& other) const {
+    return true;
+  }
+
+  bool operator<(const S& other) const {
+    return false;
+  }
+};
+
+
+int main() {
+  S s, s1;
+  using namespace std::rel_ops;
+
+  std::cout << std::boolalpha;
+  std::cout << (s == s1) << '\n';
+  std::cout << (s < s1) << '\n';
+  std::cout << (s > s1) << '\n';
+}
+```
+### `std::less_equal<T>{}`
+```cpp
+#include <functional>
+#include <vector>
+#include <iostream>
+#include <algorithm>
+
+int main() {
+  std::vector v(20, 2);
+  std::sort(v.begin(), v.end(), std::less_equal<int>{});  // UB, требования компаратора: cmp(a, a) всегда false
 }
 ```
 
@@ -245,3 +283,185 @@ int main() {
   std::cout << 123456_count << '\n';
 }
 ```
+
+# C-style cast operators
+```cpp
+#include <iostream>
+
+double x = 10;
+
+struct S {
+  explicit operator int() const {
+    return 123;
+  }
+
+  operator double&() const {
+    return x;
+  }
+
+  operator const double&() const {
+    return x;
+  }
+};
+
+void foo(int x) {
+  std::cout << x << '\n';
+}
+
+void bar(double& x) {
+  std::cout << x << '\n';
+}
+
+int main() {
+  S s;
+  std::cout << (int)s << '\n';
+  std::cout << static_cast<int>(s) << '\n';
+  // foo(s);  // CE
+  bar(s);
+}
+```
+
+
+# Spaceship operator
+- Since C++20
+- Defined in header `<compare>`
+
+| Type                    | Ordering | Implicitly convertible to                     |
+| ----------------------- | -------- | --------------------------------------------- |
+| `std::strong_ordering`  | ЛУМ*     | `std::partial_ordering`, `std::weak_ordering` |
+| `std::weak_ordering`    | ЛУМ*     | `std::partial_ordering`                       |
+| `std::partial_ordering` | ЧУМ**    | -                                             |
+
+- $*$Частично упорядоченное множество
+- $**$Линейно упорядоченное множество
+
+### `std::strong_ordering` structure
+```cpp
+// public static member constants
+inline constexpr std::strong_ordering less;
+inline constexpr std::strong_ordering equivalent;
+inline constexpr std::strong_ordering equal;
+inline constexpr std::strong_ordering greater;
+```
+
+### `std::weak_ordering` structure
+```cpp
+// public static member constants
+inline constexpr std::weak_ordering less;
+inline constexpr std::weak_ordering equivalent;
+inline constexpr std::weak_ordering greater;
+```
+
+### `std::partial_ordering` structure
+```cpp
+// public static member constants
+inline constexpr std::partial_ordering less;
+inline constexpr std::partial_ordering equivalent;
+inline constexpr std::partial_ordering greater;
+inline constexpr std::partial_ordering unordered;
+```
+
+```cpp
+#include <iostream>
+
+
+int main() {
+  // <=> returns one of "strong ordering, weak_ordering, partial_ordering"
+  int x = 3;
+  int y = 10;
+  x <=> y;      // strong ordering
+  2.5 <=> 3.5;  // partial ordering cause of NaN
+                //
+  // result of <=> can be compared with other result or with 0
+  std::cout << std::boolalpha;
+  std::cout << ((x <=> y) < 0) << '\n';
+  std::cout << ((y <=> x) > 0) << '\n';
+  std::cout << ((x <=> x) == 0) << '\n';
+  std::cout << ((x <=> x) == std::strong_ordering::equal) << '\n';
+}
+```
+
+### Mathematics example
+```cpp
+#include <ios>
+#include <iostream>
+
+struct A {};
+
+struct S {
+  int operator<=>(const A&) const {
+    return 0;
+  }
+};
+
+int main() {
+  S s;
+  A a;
+  std::cout << std::boolalpha;
+  std::cout << (typeid(s <=> a) == typeid(int)) << '\n';  // true
+  std::cout << (typeid(a <=> s) == typeid(int)) << '\n';  // false
+  std::cout << (typeid(a <=> s) == typeid(std::strong_ordering)) << '\n';  // (a <=> s)  ==>  (0 <=> (s <=> a))  ==>  (0 <=> int)  ==>  std::strong_ordering ==> true
+}
+```
+
+### `std::compare_X_order_fallback`
+- It's unspecified
+- Из `<`, `==` собирает полноценный `std::X_ordering`
+	- Словно аналог `using namespace std::rel_ops;`
+
+```cpp
+#include <compare>
+#include <ios>
+#include <iostream>
+
+// Type with support for old-style comparison
+struct Coord {
+  int x;
+  int y;
+  friend bool operator<(const Coord& left, const Coord& right) {
+    if (left.x == right.x) return left.y < right.y;
+    return left.x < right.x;
+  }
+  friend bool operator==(const Coord& left, const Coord& right) {
+    return left.x == right.x && left.y == right.y;
+  }
+};
+
+int main() {
+  std::boolalpha(std::cout);
+  Coord a{1, 2}, b{2, 2};
+
+  // Wouldn't compile, type doesn't implement operator<=>
+  // auto v = a <=> b;
+
+  // Produces strong_ordering using operator == and <
+  auto s = std::compare_strong_order_fallback(a, b);
+  // std::is_lt(s) == true
+  // decltype(s) == std::strong_ordering
+
+  std::cout << "std::is_lt(s) == " << std::is_lt(s) << '\n';
+  static_assert(std::is_same_v<decltype(s), std::strong_ordering>);
+
+  // Produces weak_ordering using operator == and <
+  auto w = std::compare_weak_order_fallback(a, b);
+  // std::is_lt(w) == true
+  // decltype(w) == std::weak_ordering
+
+  std::cout << "std::is_lt(w) == " << std::is_lt(w) << '\n';
+  static_assert(std::is_same_v<decltype(w), std::weak_ordering>);
+
+  // Produces partial_ordering using operator== and < (both a < b, b < a)
+  auto p = std::compare_partial_order_fallback(a, b);
+  // std::is_lt(p) == true
+  // decltype(p) == std::partial_ordering
+
+  std::cout << "std::is_lt(p) == " << std::is_lt(p) << '\n';
+  static_assert(std::is_same_v<decltype(p), std::partial_ordering>);
+}
+```
+
+==TODO==
+`std::strong(weak/partial)_order and X_order_fallback`
+[S1](https://en.cppreference.com/w/cpp/utility/compare/strong_order)
+[S2](https://en.cppreference.com/w/cpp/utility/compare/compare_three_way)
+[S3](https://gitlab.com/Wanaphi/mipt_cpp_cs_seminars/-/blob/main/c_plus_plus_/02_operator_overloading/desk_photos_/photo_2024-09-21_03-24-12.jpg?ref_type=heads)

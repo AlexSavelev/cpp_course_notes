@@ -100,6 +100,9 @@ f(int)
 f(5)
 
 ==TODO== cv
+==TODO== mutable
+
+[Link](https://gitlab.com/Wanaphi/mipt_cpp_cs_seminars/-/blob/main/c_plus_plus_/01_oop_basics_/06_const_methods.cpp?ref_type=heads)
 volatile size_t size;
 ```cpp
 for (size_t i = 0; i < size; ++i) {

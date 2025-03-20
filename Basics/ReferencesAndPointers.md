@@ -70,6 +70,13 @@ const int* const ptr = &a;
 
 - _**Note:**_ Запрещено снимать степень константности, иначе UB
 
+## Summary
+```cpp
+char * const str1; // str1 cannot be modified, but the character pointed to can
+const char * str2; // str2 can be modified, but the character pointed to cannot
+const char * const str3 // neither str3 nor the character pointed to can be modified.
+```
+
 # Продление жизни
 
 ```cpp

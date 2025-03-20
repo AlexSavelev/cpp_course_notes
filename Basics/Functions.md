@@ -147,3 +147,14 @@ int main() {
   std::cout << Impl::foo(10) << '\n';
 }
 ```
+
+# Function delete
+```cpp
+void foo(int) = delete;
+void foo(double) {}
+
+int main() {
+	foo(3.5);
+	// foo(1);  // CE
+}
+```

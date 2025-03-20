@@ -62,3 +62,68 @@ int main() {
   std::cout << al::foo();
 }
 ```
+
+# Point of declaration
+> The point of declaration for a name is immediately after its complete declarator and before its initializer... `[3.3.2/1]`
+
+```cpp
+#include <iostream>
+
+int foo(int* a) {
+  *a = 0;
+  return 1;
+}
+
+int main() {
+  int a /*point of declaration*/ = foo(&a);
+  std::cout << a << '\n';
+  const int x = 4;
+  {
+    int x[x] /*point of declaration*/ = {1, 2, 3, 4};
+    std::cout << "x[2] = " << x[2] << '\n';
+  }
+}
+```
+
+- For example:
+```cpp
+int x = 101;
+{
+    int x = x;
+    std::cout << x << std::endl;  // garbage
+}
+```
+- Above code is equal to the below one:
+```cpp
+int x = 101;
+{
+  int x;
+  x = x; // Self assignment, assigns an indeterminate value.
+  std::cout << x << std::endl;
+}
+```
+- Because:
+```cpp
+int x = x; <--// Now, we have the new `x` which hides the older one, 
+//   ^        // so it assigns itself to itself
+//   |
+//   +---// Point of declaration,
+//       // here compiler knows everything to declare `x`.
+//       // then declares it.
+```
+
+- Also, this example shows the point of declaration for an enumerator
+```cpp
+const int x = 12;
+{
+  enum { x = x };
+//             ^
+//             |
+//             +---// Point of declaration
+//                 // compiler has to reach to "}" then
+//                 // there is just one `x`, the `x` of `const int x=12`
+}
+```
+- The enumerator `x` is initialized with the value of the constant `x`, namely `12`.
+- [Source](https://stackoverflow.com/questions/15746271/point-of-declaration-in-c)
+

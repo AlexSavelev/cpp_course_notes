@@ -752,3 +752,20 @@ int main() {
   // t - зависимо от шаблона, зарезолвить foo(t) получится уже после того, как найдется более подходящая перегрузка
 }
 ```
+
+### Example 8
+```cpp
+#include <iostream>
+
+template <typename T>
+void foo() {}
+
+template <>
+void foo<int>() = delete;
+
+int main() {
+  foo<void>();
+  // foo<int>();  // CE
+}
+```
+

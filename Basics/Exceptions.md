@@ -254,6 +254,69 @@ int main() {
 }
 ```
 
+### Function try block
+- То, что было до этого называется "Ordinary try block"
+- A function try block is a special kind of function body.
+- If an exception is thrown from its compound-statement or ctor-initializer (if any), the exception will be matched against the handlers (`catch`) in its handler-seq ﻿:
+```cpp
+int foo() try { throw 1; } catch (...) {
+  std::cout << "here\n";
+  return 4;
+}
+
+int main() { std::cout << foo() << '\n'; }
+```
+
+```cpp
+struct X {
+    int mem;
+ 
+    X() try : mem(f(true)) {}
+    catch (...) {
+        // handles the exception 1
+    }
+ 
+    X(int) try {
+        throw 2;
+    } catch (...) {
+        // handles the exception 2
+    }
+};
+```
+
+```cpp
+#include <iostream>
+
+struct S {
+  S() {
+    data_ = new int[100];
+    throw 3;
+  }
+
+  ~S() {
+    std::cout << "Called\n";
+    delete[] data_;
+    delete[] body_;
+  }
+
+  int* data_;
+  int* body_;
+};
+
+struct C {
+  C() try : s() { s.data_[0] = 10; } catch (int x) {
+    std::cout << x << '\n';  // 3
+  } catch (...) {}
+
+  S s;
+};
+
+int main() {
+  C c;
+  return 0;
+}
+```
+
 # Гарантии безопасности
 - Нет
 	- Ничего не гарантируем

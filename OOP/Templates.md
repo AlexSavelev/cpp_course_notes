@@ -342,6 +342,25 @@ void foo(T x) {
      typename remove_const <T>::type y;
 }
 ```
+
+### `std::decay`
+- Разлагает тип
+```cpp
+template<class T>
+struct decay {
+ private:
+  typedef typename std::remove_reference<T>::type U;
+ public:
+  typedef typename std::conditional<std::is_array<U>::value,
+	  typename std::add_pointer<typename std::remove_extent<U>::type>::type,
+	  typename std::conditional<std::is_function<U>::value,
+            typename std::add_pointer<U>::type,
+            typename std::remove_cv<U>::type
+      >::type
+  >::type type;
+};
+```
+
 ### С алиасами
 - Начиная с C++17 существуют шаблонные псевдонимы, поэтому всеми этими метафункциями стало чуть проще пользоваться:
 	- `using remove_const_t = typename remove_const<T>::type`

@@ -77,6 +77,18 @@ Also, `memset` is likely some very efficient inline assembler, meaning that the 
 - C-style arrays
 	- `int arr[10]; // sizeof(arr) = 40`
 
+```cpp
+#include <iostream>
+
+int main() {
+  int* ptr = new int[10]{1, 2, 3, 4, 5, 6};
+  for (std::size_t i = 0; i < 10; ++i) {
+    std::cout << ptr[i] << '\n';  // 1234560000
+  }
+  delete[] ptr;
+}
+```
+
 # `new`, `delete` overloading
 
 ```cpp

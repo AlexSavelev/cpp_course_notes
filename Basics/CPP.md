@@ -46,6 +46,7 @@ for (init-statement; bool-expr; expr) { statement; }
 ```
 
 ## `switch`
+- Компилятор может оптимизировать `switch`: это будет хеш-таблица с указателями на соответствующую функцию
 ```cpp
 switch (init-statement; condition) {  // C++17
 	case expr1:
@@ -66,7 +67,7 @@ switch (init-statement; condition) {  // C++17
 		- If the yielded value is of a class type, it is contextually implicitly converted to an integral or enumeration type.
 - Если не ставить `break;` после каждого `case`'а, программа будет проваливаться ниже
 - Начиная с C++17 при таких обстоятельствах (переходы между `case` без `break`) компилятор будет выдавать Warning'и
-	- Чтобы вернуть былую фичу, необходимо указать аттрибут `[[fallthrough]]`
+	- Чтобы бага стала фичей, необходимо и достаточно указать аттрибут `[[fallthrough]]`
 ```cpp
 void f(int n) {
     void g(), h(), i();
@@ -102,4 +103,3 @@ void f(int n) {
 - Syntax: `a ? b : c;`
 - Example: `x = (x < 2 : 1 : 2);`
 - Note: Возращаемые значения должны быть одного типа
-

@@ -23,7 +23,7 @@
 | 18  | [Memory](Advanced/Memory.md)<br>- [Allocators](Advanced/Allocators.md)                                 | 3                |     |
 | 19  | [Move semantics](Advanced/MoveSemantics.md)                                                            | 5                |     |
 | 20  | [Placeholder type specifiers](Advanced/Placeholders.md)                                                | 2                |     |
-|     |                                                                                                        |                  |     |
+| 21  | [Start pointers](Advanced/SmartPointers.md)                                                            | 3                |     |
 |     |                                                                                                        |                  |     |
 |     |                                                                                                        |                  |     |
 
