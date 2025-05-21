@@ -184,5 +184,3 @@ class istream_iterator {
   std::istream& in_;
 }
 ```
-
-==TODO== invalidation

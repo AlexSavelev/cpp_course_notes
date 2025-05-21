@@ -345,6 +345,14 @@ void foo(T x) {
 
 ### `std::decay`
 - Разлагает тип
+```BrainFuck
+Let U be remove_reference_t<T>. If is_array_v<U> is true, the
+member typedef type equals remove_extent_t<U>*. If
+is_function_v<U> is true, the member typedef type equals
+add_pointer_t<U>. Otherwise the member typedef type equals
+remove_cv_t<U>.
+```
+
 ```cpp
 template<class T>
 struct decay {
@@ -550,14 +558,27 @@ int main() {
 
 1. Name lookup (смотрит на все, что подходит по имени) (не смотрит на сигнатуру)
 2. Отсеить неподходящие (количество аргументов)
-3. Вывод типов (в рамках вызова `foo(3.14)` взять `[T = double]`)
+3. Вывод типов (template deduction) (в рамках вызова `foo(3.14)` взять `[T = double]`)
 4. Подстановка (template substitution) (только в сигнатуру функции (не тело))
+	- Создается overload set, и то, что substitution failed, выбрасывается из общего списка. Здесь как раз работает SFINAE.
 5. Overload resolution (выбор между `foo(T=int)` и `foo(int)`: выберет перегрузку, т.к. туда не надо было выводить тип)
 6. Template instantiation (инстанциация) (если в функции тоже используются шаблонные функции, компилятор будет рекурсивно начинать процесс заного - уже для этой шаблонной функции)
 	- `template <typename T> void bar(T) {}`
 	- `template <typename T> void foo(T t) { bar(t) }`
 
-- Если нет шаблонов: name lookup, overload resolution only
+#### Example on `f("Hello")` invoke
+
+| Args                          | State                                      |
+| ----------------------------- | ------------------------------------------ |
+| `int`                         | Overload resolution failed ==TODO== cppref |
+| `double`                      | Overload resolution failed                 |
+| `T`                           | OK - `T = [char*]`                         |
+| `std::type_identity<T>`       | deduction failed                           |
+| `std::vector<T>`              | deduction failed                           |
+| `T` (and returns `T::size_t`) | substitution failed                        |
+| `int, int`                    | wrong number of args                       |
+
+- Если нет шаблонов: name lookup, overload resolution only ==TODO==
 
 # Argument deduction
 - [More info](https://en.cppreference.com/w/cpp/language/class_template_argument_deduction)
@@ -578,6 +599,18 @@ int main() {
 	std::vector<int> v;
 	foo(v);
 	bar(v);  // CE
+}
+```
+
+- Однако вывод типов не работает для аргументов по умолчанию
+```cpp
+template <typename T>  // or =int
+void g(T&& value = 10) {}
+
+int main() {
+	g();  // CE (вывод типов не работает для аргументов по умолчанию)
+	g<int>();  // OK
+	g(11);  // OK
 }
 ```
 

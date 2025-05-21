@@ -30,7 +30,7 @@ int main() {
 ```
 <type> <class_name>::* <name> = &<class_name>::<field_name>
 ```
-- Syntax for function projectors: 
+- Syntax for function pointers: 
 ```
 <type> (<class_name>::* <name>)(Arg1, Arg2, ...) = &<class_name>::<method_name>
 ```

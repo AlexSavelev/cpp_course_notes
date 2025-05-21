@@ -101,6 +101,9 @@ int main(int argc, char** argv) {
 - Even worse, even if you run the program with no command line options (so that `get_value()` is never called), the results are _still_ undefined. It could still reformat your hard drive.
 - [Source](https://devblogs.microsoft.com/oldnewthing/20240802-00/?p=110091)
 
-
-
-==TODO== https://en.cppreference.com/w/cpp/language/sfinae
+# SFINAE
+- Substitution Failure Is Not An Error
+- [About](https://en.cppreference.com/w/cpp/language/sfinae)
+- This rule applies during overload resolution of function templates: When substituting the explicitly specified or deduced type for the template parameter fails, the specialization is discarded from the overload set instead of causing a compile error
+- This feature is used in template metaprogramming
+- Also see in Metaprogramming page

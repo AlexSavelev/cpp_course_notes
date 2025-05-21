@@ -11,6 +11,7 @@
 - Can't overload (4): `. .* ?: ::`
 	- Can't overload operators of base types (`int`, `ptr`, ...)
 	- Can't create new operators (exception: literal suffix operator)
+==TODO== https://en.cppreference.com/w/cpp/language/operators last
 
 `std::cout << x = 5; // 5`
 - С C++17 правая часть operator= вычисляется первой (`++x = x++`)

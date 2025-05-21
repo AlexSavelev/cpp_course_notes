@@ -3,6 +3,7 @@
 
 ```cpp
 #include <iostream>
+#include <type_traits>
 
 template <typename... Ts>
 class Tuple;
@@ -32,17 +33,17 @@ struct TupleSize<Tuple<Head, Tail...>> {
       1 +
       TupleSize<Tuple<Tail...>>::value;  // const = constexpr for integral types
 };
+
+template <>
+struct TupleSize<Tuple<>> {
+  static const std::size_t value = 0;
+};
 */ // in cringe.cpp
 
 template <typename... Ts>
 struct TupleSize<Tuple<Ts...>> {
   static const std::size_t value =
-      sizeof...(Ts);  // O(1) or O(n) - implementation defined??
-};
-
-template <>
-struct TupleSize<Tuple<>> {
-  static const std::size_t value = 0;
+      sizeof...(Ts);
 };
 
 using TestTup1 = Tuple<int, double, float>;
@@ -70,6 +71,10 @@ struct TupleElement<0, Tuple<Head, Tail...>> {
 
 template <std::size_t I, typename Tup>
 using TupleElementT = typename TupleElement<I, Tup>::type;
+
+static_assert(std::is_same_v<TupleElementT<0, TestTuple1>, int>);
+static_assert(std::is_same_v<TupleElementT<1, TestTuple1>, double>);
+static_assert(std::is_same_v<TupleElementT<2, TestTuple1>, float>);
 
 // Getting element
 template <std::size_t I, typename Tup>
@@ -162,12 +167,38 @@ template <typename... TL, typename... TR>
 Tuple<TL..., TR...> TupleCat(Tuple<TL...> lhs, Tuple<TR...> rhs) {}
 */
 
+// Tuple CAT
+template <typename... TL, std::size_t... IL, typename... TR, std::size_t... IR>
+Tuple<TL..., TR...> TupleCatImpl(Tuple<TL...> lhs, std::index_sequence<IL...>,
+                                 Tuple<TR...> rhs, std::index_sequence<IR...>) {
+  return Tuple<TL..., TR...>(get<IL>(lhs)..., get<IR>(rhs)...);
+}
+
+template <typename... TL, typename... TR>
+Tuple<TL..., TR...> TupleCat(Tuple<TL...> lhs, Tuple<TR...> rhs) {
+  return TupleCatImpl(lhs, std::make_index_sequence<sizeof...(TL)>{},
+                      rhs, std::make_index_sequence<sizeof...(TR)>{});
+}
+
+template <typename T>
+void Print(T) {
+  std::cout << __PRETTY_FUNCTION__ << '\n';
+}
+
 int main() {
-  TestTuple1 tup(1, 2.2, 3.3);
+  TestTuple1 tup(1, 2.2, 3.4);
   std::cout << get<0>(tup) << '\n';
   std::cout << get<1>(tup) << '\n';
   std::cout << get<2>(tup) << '\n';
+
   std::cout << get<int>(tup) << '\n';
+
+  auto res = TupleCat(tup, tup);
+  Print(res);
+  std::cout << get<3>(res) << '\n';
+
+  Tuple tup2(2, 3.3, std::string("Hello"));
+
+  Tuple tup3(3);
 }
 ```
-

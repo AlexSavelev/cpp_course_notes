@@ -402,15 +402,55 @@ T&& forward(T& value) {
 2. У `forward` на самом деле есть вторая перегрузка
 	- Предположим, что форвардим не просто аргументы, а какую-то функцию от этих аргументов (`forward(bar(value))`). Тогда в теории может возникнуть ситуация, когда мы пытаемся форвардить уже честное rvalue (а `forward` у нас не умеет принимать rvalue, так как принимает lvalue-ссылку)
 ```cpp
-template <typename T>
-T&& forward(std::remove_reference_t<T>& x) noexcept {
-  return static_cast<T&&>(x);
-}
+#include <type_traits>
 
 template <typename T>
-T&& forward(std::remove_reference_t<T>&& x) noexcept {
+T&& Forward(std::remove_reference_t<T>& value) noexcept {  // we can't accept rvalue
+  return static_cast<T&&>(value);
+}
+
+// forward<int&> -> int& && -> int& => int& forward(...)
+// forward<int> -> int && -> int&& => int&& forward(...)
+
+template <typename T>
+T&& Forward(std::remove_reference_t<T>&& value) noexcept {
   static_assert(!std::is_lvalue_reference_v<T>);
-  return static_cast<T&&>(x);
+  return static_cast<T&&>(value);
+}
+```
+
+==TODO== checkout cringe
+```cpp
+// forward<int&>  -> int& && -> int&  int& forward();
+// template <>
+// const vector<int>&& forward(const vector<int>& value) {
+//   return value;
+// }
+// template <int>
+// int&& forward(int&& value) {
+//   return static_cast<int&&>(value);
+// }
+// forward<int> -> int && -> int&&    int&& forward(...);
+// const std::vector<int> v;
+//
+// f(T && value)
+// f(std::move(v)); T -> const std::vector<int>
+// f(const std::vector<int>&& value)
+// forward<const std::vector<int>>(value);
+// forward(const std::vector<int>&)
+// forward(const std::vector<int>&&)
+```
+
+```cpp
+template <typename T>
+void f(T&& value) {
+  Forward<T>(value);
+}
+
+int main() {
+  f(10);  // T=int
+  int x = 1;
+  f(x);  // T=int&
 }
 ```
 
@@ -437,40 +477,16 @@ int main() {
 
 ### One problem solution
 - Есть у нас класс `BigInteger`. Есть для него оператор `+`. Мы хотим чтобы выражения вида `a + b = 5` не работали. До C++ 11 это решалось тем, что `operator+` возвращал `const BigInteger`. Начиная с C++11 нужно просто оператор присваивания пометить lvalue qualifier:
+- ==TODO== lvalue qualifiers
 ```cpp
 struct BigInteger {
   BigInteger& opeartor=(const BigInteger&) &;
 }
 ```
 
-
-
-
-==TODO== `F*CK` with it!
-
-rvalue vs lvalue
-1. 
-2. если ф-ция возвращает rvalue ссылку, то ф-ция - lvalue (rvalue) expr
-
-
-
-
-
----
-
-```cpp
-template <typename T>  // or =int
-void g(T&& value = 10) {
-
-}
-
-int main() {
-	g();  // CE (вывод типов не работает для аргументов по умолчанию)
-	g<int>();
-	g(11);
-}
-```
-
+# Examples
+### Example 1
+- ==TODO== ?! compile - works!
 ```cpp
 template <typename T = const char*>  // Solution: const char*&
 void g(T&& value = "Hello") {  // CE. It is a lvalue: located in .text: "Hello" (we have a reference)
@@ -478,5 +494,12 @@ void g(T&& value = "Hello") {  // CE. It is a lvalue: located in .text: "Hello" 
 }
 
 // we can: g("World"); g(); // it is OK
+// const char* r = "Hello"; g("hello"); g(r)
 ```
 
+
+==TODO== `F*CK` with it!
+
+rvalue vs lvalue
+1. 
+2. если ф-ция возвращает rvalue ссылку, то ф-ция - lvalue (rvalue) expr

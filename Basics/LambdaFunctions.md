@@ -80,6 +80,7 @@ class S {
 	}
 };
 ```
+==TODO== no ref is const?
 
 #### Захват по перемещению (Capture by Move)
 ```cpp

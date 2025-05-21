@@ -104,8 +104,8 @@ _**Sol**_: создаем класс `BaseNode { *next, *prev }`, а `Node` - н
 
 # Инвалидация итераторов
 - Доступна [здесь](https://en.cppreference.com/w/cpp/container)
-- К экзу лучше выучить
-==TODO== party 05
+- К экзу лучше выучить!
+![Iterator invalidation](../assets/iterator_invalidation.png)
 
 # String
 ### std::string
@@ -152,7 +152,7 @@ private:
 - _**COW**_ - Copy-on-write
 - Подход, при котором во время чтения области данных используется общая копия, а в случае изменения данных — создается новая копия
 - В стандарте COW категорически запрещена
-	- В 2000-х появились гипертреды и работать со строками, в которых применяется оптимизация COW, стало очень тяжело\
+	- В 2000-х появились гипертреды и работать со строками, в которых применяется оптимизация COW, стало очень тяжело
 
 ### FBString
 - Фейсбуковская (folly FBString)
@@ -162,13 +162,14 @@ private:
 - На самом деле не в последнем байте, а в последних 5 битах, остальные 3 бита уходят под флаги
 	- `SSO/NO SSO`
 - В `STL` реализация не была принята ввиду необходимости постоянно обращаться к `size` и срезать биты при обращении к `data[i]`
-- Инструкции в зависимости от размера `S`:
+- Оптимизации в зависимости от размера `S`:
 
 | S <= 23 | 23 < S < 256 | S >= 256 |
 | ------- | ------------ | -------- |
 | SSO     | as vector    | COW      |
 
 # `std::tuple`
+- See implementation in Misc.Tuple page
 
 ```cpp
 std::tuple<int, double, std::string> tup(1, 2.2, "Hello");
@@ -213,70 +214,51 @@ double b = 1.1;
 std::string c = "lala";
 std::tie(a, b, c) = tup;  // makes 3-linked tuple and assigns to tup
 std::cout << x << ' ' << y << ' ' << z << '\n';
+
+// std::tie - ex2
+x = 10;
+double y = 20;
+std::string s = "a";
+auto t = std::tie(x, std::ignore, s);
+t = tup;
+std::cout << x << '\n';
+std::cout << y << '\n';
+std::cout << s << '\n';
 ```
 
 ### Tuple cat
-- `std::tuple tup2 = std::tuple_cat(tup, tup1);`
+```cpp
+std::tuple tup2 = std::tuple_cat(tup, tup1);
+```
 
 ### `std::forward_as_tuple`
+```cpp
+template< class... Types >  
+std::tuple<Types&&...> forward_as_tuple( Types&&... args ) noexcept;
+```
+Constructs a tuple of references to the arguments in args suitable for forwarding as an argument to a function. The tuple has rvalue reference data members when rvalues are used as arguments, and otherwise has lvalue reference data members.
+
 ### Каррирование
-- ==TODO== Perfect forwarding
 ```cpp
 #include <iostream>
 #include <tuple>
 
 template <typename F, typename... Args>
-auto curry(F&& f, Args&& args) {
-	return [
-		ft = std::forward_as_tuple(std::forward<F>(f)),
-		argst = std::forward_as_tuple(std::forward<Args>(args)...)
-	]<typename... Kwargs>(Kwargs&&... kw) {
-		return std::apply(
-			std::get<0>(std::move(ft)),
-			std::tuple_cat(std::move(argst), std::forward_as_tuple(std::forward<Kwargs>(kw)...))
-		);
-	};
+auto curry(F&& f, Args&&... args) {
+  return [
+    ft = std::forward_as_tuple(std::forward<F>(f)),
+    argst = std::forward_as_tuple(std::forward<Args>(args)...)
+  ]<typename... Ts>(Ts&&... ts) {
+    return std::apply(
+        std::get<0>(std::move(ft)),
+        std::tuple_cat(std::move(argst), std::forward_as_tuple(std::forward<Ts>(ts)...)));
+  };
 }
 
 int main() {
-	auto f = [](int x, double y) { return x * y; }
-	auto g = curry(f, 10);
-	std::cout << g(2.2);
+  int x = 10;
+  auto f = [](int x, double y) { return x * y; };
+  auto g = curry(f, x);
+  std::cout << g(2.2) << '\n';
 }
-```
-
-
-
-deduction guide in C++17 ==TODO==
-tuples in C++11
-
-==TODO== fill
-
-```cpp
-#include <type_traits>
-
-template <typename T>
-T&& Forward(std::remove_reference<T>& value) {  // we can't accept rvalue
-  return static_cast<T&&>(value);
-}
-
-// forward<int&> -> int& && -> int& => int& forward(...)
-// forward<int> -> int && -> int&& => int&& forward(...)
-
-template <typename T>
-T&& Forward(std::remove_reference<T>&& value) {
-  return static_cast<T&&>(value);
-}
-
-template <typename T>
-void f(T&& value) {
-  Forward<T>(value);
-}
-
-int main() {
-  f(10);  // T=int
-  int x = 1;
-  f(x);  // T=int&
-}
-
 ```

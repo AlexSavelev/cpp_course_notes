@@ -95,7 +95,7 @@ void Vector<T, Alloc>::reserve(size_t n) {
   try {
     for (; i < size_; ++i) {
       AllocTraits::construct(alloc_, new_arr + i,
-                             arr_[i]);  // здесь std::move(arr_[i])
+                             arr_[i]);  // здесь std::move(arr_[i]) (а точнее move_if_noexcept)
     }
   } catch (...) {
     for (size_t j = 0; j < i; ++j) {
@@ -152,11 +152,22 @@ PoolAlloc alloc2 = alloc1;
 	- Или чтобы эти два аллокатора отвечали за один и тот же пул
 - Для это есть несколько юзингов
 
-### select_on_container_copy_construction
-### propagate_on_container_copy_assignment
-==TODO==
-
 # Устройство аллокатора
+- [More about](https://en.cppreference.com/w/cpp/memory/allocator)
+
+| Type                                     | Definition                                                                                                      | Desc                                                 |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `value_type`                             | `T`                                                                                                             |                                                      |
+| `pointer`                                | `T*`                                                                                                            | - deprecated in C++17<br>- removed in C++20          |
+| `const_pointer`                          | `const T*`                                                                                                      | - deprecated in C++17<br>- removed in C++20          |
+| `reference`                              | `T&`                                                                                                            | - deprecated in C++17<br>- removed in C++20          |
+| `const_reference`                        | `const T&`                                                                                                      | - deprecated in C++17<br>- removed in C++20          |
+| `size_type`                              | `std::size_t`                                                                                                   |                                                      |
+| `difference_type`                        | `std::ptrdiff_t`                                                                                                |                                                      |
+| `propagate_on_container_move_assignment` | `std::true_type`                                                                                                | C++11                                                |
+| `rebind`                                 | ```cpp<br>template< class U >  <br><br>struct rebind  <br>{  <br>    typedef allocator<U> other;  <br>};<br>``` | - deprecated in C++17<br>- removed in C++20          |
+| `is_always_equal`                        | `std::true_type`                                                                                                | C++11<br>- deprecated in C++23<br>- removed in C++26 |
+
 - `is_always_equal : true_type`
 	- Всегда равен любому другому
 	- about `true_type` [see](https://en.cppreference.com/w/cpp/types/integral_constant)
@@ -171,6 +182,29 @@ S& operator=(other) {
 	...
 } // this cringe + million of try-catch
 ```
+
+# Устройство `std::allocator_traits`
+
+### Member types (самое интересное)
+
+| `allocator_type`                         | `Alloc`                                                                                 |
+| ---------------------------------------- | --------------------------------------------------------------------------------------- |
+| `value_type`                             | `Alloc::value_type`                                                                     |
+| `pointer`                                | `Alloc::pointer` if present, otherwise `value_type`                                     |
+| `propagate_on_container_copy_assignment` | `Alloc::propagate_on_container_copy_assignment` if present, otherwise `std::false_type` |
+| `propagate_on_container_move_assignment` | `Alloc::propagate_on_container_move_assignment` if present, otherwise `std::false_type` |
+| `propagate_on_container_swap`            | `Alloc::propagate_on_container_swap` if present, otherwise `std::false_type`            |
+| `is_always_equal`                        | `Alloc::is_always_equal` if present, otherwise `std::is_empty<Alloc>::type`             |
+
+### Member functions (самое интересное)
+
+| Function                                       | Desc                                                            |
+| ---------------------------------------------- | --------------------------------------------------------------- |
+| `static allocate`                              | allocates uninitialized storage using the allocator             |
+| `static deallocate`                            | deallocates storage using the allocator                         |
+| `static construct`                             | constructs an object in the allocated storage                   |
+| `static destroy`                               | destructs an object stored in the allocated storage             |
+| `static select_on_container_copy_construction` | obtains the allocator to use after copying a standard container |
 
 # Полиморфные аллокаторы
 

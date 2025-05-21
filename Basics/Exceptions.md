@@ -41,6 +41,9 @@ int main() {
 
 # Stack unwinding
 - При броске выделяется блок памяти, туда укладывается объект, который вы бросили, начинает разворачиваться стек (stack unwinding)
+- Once the exception object is constructed, the control flow works backwards (up the call stack) until it reaches the start of a try block, at which point the parameters of all associated handlers are compared, in order of appearance, with the type of the exception object to find a match. If no match is found, the control flow continues to unwind the stack until the next try block, and so on. If a match is found, the control flow jumps to the matching handler.
+- As the control flow moves up the call stack, destructors are invoked for all objects with automatic storage duration that are constructed, but not yet destroyed, since the corresponding try block was entered, in reverse order of completion of their constructors.
+- [More about](https://en.cppreference.com/w/cpp/language/throw)
 
 # Try-catch
 
@@ -143,7 +146,9 @@ int main() {
   throw Verbose{};  // Verbose 8 default constructed
 }
 ```
-==TODO== Verbose 4 destructor not called?
+
+- Verbose 4 destructor not called
+	- Обязано быть уничтожено лишь то, что создано в блоке `try`
 ### Conversions
 ```cpp
 #include <iostream>

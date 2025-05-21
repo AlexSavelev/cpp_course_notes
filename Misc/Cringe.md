@@ -88,6 +88,58 @@ So, in C++17, `T obj = T{...}` is literally equivalent to `T obj{...}`.
 
 - [Source](https://stackoverflow.com/questions/60805366/object-initialization-syntax-in-c-t-obj-vs-t-obj)
 
+==TODO== Add [About {}()](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#es23-prefer-the--initializer-syntax)
+- About auto CLI  ==TODO== CE about
+```cpp
+#include <iostream>
+
+template <typename T>
+void foo(T args) {
+  // void foo(T) [with T = std::initializer_list<int>]
+  std::cout << __PRETTY_FUNCTION__ << '\n';
+}
+
+int main() {
+  // foo({1, 2, 3});  // CE
+
+  auto a = {1, 2, 3};
+  foo(a);
+}
+```
+
+```cpp
+#include <iostream>
+#include <vector>
+
+struct S {
+  S(int x, int y) { std::cout << "S(x, y)" << '\n'; }
+
+  S(std::initializer_list<int>) { std::cout << "S(il)" << '\n'; }
+
+  S(double x, double y) {}
+};
+
+template <typename T, typename... Args>
+void ConstructAt(T* ptr, Args&&... args) {
+  new (ptr) T(std::forward<Args>(args)...);
+}
+
+int main() {
+  std::vector v1(10, 20);  // {20 20 20 20 20 20 20 20 20 20}
+  std::vector v2{10, 20};  // {10 20}
+                           //
+  S s1(10, 20);
+  S s2{10, 20};
+
+  std::vector<int> v3{v1.begin(), v1.end()};
+  char buffer[24];
+  std::construct_at(reinterpret_cast<std::vector<int>*>(buffer), 10, 20);
+  std::vector v4{v3};
+
+  // S s3{2.2, 3.3}; CE
+}
+```
+
 # 3. Is this code valid?
 ```cpp
 struct Foo {
@@ -105,7 +157,7 @@ int main() {
 
 ### Answer
 Depends on the C++ version.
-Up until C++17, both variables are initialized with aggregate initialization. `Foo foo` and `Foo foo(10)` wouldn't be valid, though. ==TODO== Why?
+Up until C++17, both variables are initialized with aggregate initialization. `Foo foo` and `Foo foo(10)` wouldn't be valid, though.
 Starting with C++20, this somewhat counter-intuitive behaviour is fixed, and this code no longer compiles.
 
 # 4. (^_=...=_^)
@@ -122,7 +174,7 @@ void foo(F f, Ts... ts) {
 ### Answer
 1. It calls the function on the elements of the variadic pack in reverse order.
 2. `f` might return something with an overloaded `operator,`
-==TODO== operator, ??
+	- Expression is not assignable (`0 = 0`)
 
 # 5. I C `memset`
 Assume an instance of a `struct` is `memset`ed to zeroes. What would be the value of the padding?
@@ -196,7 +248,9 @@ Depends on the C++ version, and whether it is C++ to begin with.
 Up until C++17, neither an `x` object nor an `int` subobjects are created, and this code is UB.
 Starting with C++20, an `x` object and its `int` subobjects are implicitly created, and this code is valid.
 It always has been valid C code, though.
-==TODO== WHY?
+
+- Функция `malloc` возвращает нулевой указатель, если невозможно выделить буфер памяти указанного размера. Поэтому прежде, чем разыменовать указатель, его нужно проверить на равенство `NULL`
+- А так это минимальное, о чем стоит беспокоиться при использовании `malloc`
 
 # 9. Is using this function dangerous?
 ```cpp
@@ -310,8 +364,7 @@ template<>
 int foo<int*>(int*) { return 2; }
 ```
 
-# 11. What does this print?
-- [Source](https://quuxplusone.github.io/blog/2024/12/09/foreach-versus-for/)
+# 11. Our favorite ranges
 ```cpp
 struct Evil {
   auto begin() { return std::counted_iterator("Library", 7); }
@@ -323,4 +376,4 @@ Evil rg;
 for (char c : rg) { putchar(c); }
 std::ranges::for_each(rg, [](char c) { putchar(c); });
 ```
-==TODO== check
+==TODO==

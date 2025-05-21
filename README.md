@@ -24,8 +24,11 @@
 | 19  | [Move semantics](Advanced/MoveSemantics.md)                                                            | 5                |     |
 | 20  | [Placeholder type specifiers](Advanced/Placeholders.md)                                                | 2                |     |
 | 21  | [Start pointers](Advanced/SmartPointers.md)                                                            | 3                |     |
-|     |                                                                                                        |                  |     |
-|     |                                                                                                        |                  |     |
+| 22  | [Type erasure](Advanced/TypeErasure.md)                                                                | 2                |     |
+| 23  | [Metaprogramming](Advanced/Metaprogramming.md)                                                         | 3                |     |
+| 24  | [Concepts](Advanced/Concepts.md)                                                                       | 3                |     |
+| 25  | [Ranges](Advanced/Ranges.md)                                                                           | 4                |     |
+| 26  | [Constexpr](Advanced/Constexpr.md)                                                                     | 5                |     |
 
 #### Additional
 

@@ -106,3 +106,11 @@ int main() {
 	foo(c); // 2
 }
 ```
+
+# `ptrdiff_t`
+- Implementation defined
+```cpp
+// valid since C++11
+using ptrdiff_t = decltype(static_cast<int*>(nullptr) - static_cast<int*>(nullptr));
+```
+

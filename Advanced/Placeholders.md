@@ -5,12 +5,6 @@ A placeholder type specifier designates a _placeholder type_ that will be replac
 - `for(auto it = map.begin(); it != map.end(); ++it) { ... }`
 - `for(auto item : map) { ... }`
 
-- Type is deduced using the rules for template argument deduction
-```cpp
-int x;
-auto y = x;  // int
-```
-
 - Можно навешивать ссылки и константность
 ```cpp
 const auto& y = x;
@@ -36,7 +30,7 @@ int main() {
 ### `auto` в качестве возвращаемого значения
 - Since C++14
 - Очень полезно, когда тип большой или его нельзя выразить явно
-	- Например, фабрика лямбда функций
+	- Например, фабрика лямбда-функций
 ```cpp
 auto f(int& x) {
 	return x;
@@ -106,10 +100,18 @@ auto f(int x) -> int {
 - Буквально сокращение шаблонов
 	- То есть с `std::initializer_list` не прокатит
 ```cpp
-void f(auto&& x) {  // сокращение шаблонов
+#include <iostream>
 
+void f(auto&& x) {  // сокращение шаблонов
+  std::cout << __PRETTY_FUNCTION__ << '\n';
+}
+
+int main() {
+  f(1);  // void f(auto:16&&) [with auto:16 = int]
+  // f({1, 2, 3});  CE
 }
 ```
+
 - Можно с вариадиками
 ```cpp
 void f(auto... x) {
@@ -119,6 +121,56 @@ void f(auto... x) {
 
 ### `auto` как шаблонный аргумент
 - See `auto` templates in Templates page
+
+### Conclusion example
+```cpp
+#include <iostream>
+#include <string_view>
+
+auto foo(int x) {}  // C++14
+
+auto bar(auto y) {}  // C++17
+
+template <auto X>
+void baz() {}  // C++20
+
+template <typename T>
+void g(auto... x, T y) {
+  std::cout << __PRETTY_FUNCTION__ << '\n';
+}
+
+template <auto X>
+auto var = X;
+
+void f(auto x) { std::cout << __PRETTY_FUNCTION__ << '\n'; }
+
+template <typename T>
+struct S {
+  T x;
+};
+
+int main() {
+  [](auto var) {};  // C++14
+
+  auto x = 10;  // C++11
+  bar<int>(10);
+
+  g<int, double, double>(0, 0, 0);
+
+  baz<2.2>();
+
+  f(var<10>);
+  f(var<2.2>);
+  f(var<'a'>);
+
+  std::cout << var<10> << '\n';
+  var<10> = 100;
+  std::cout << var<10> << '\n';
+  std::swap(var<1>, var<2>);
+  // var<S{10}>; CE ?! TODO
+}
+```
+
 
 # `decltype`
 - Метафункция, которая в compile-time возвращает тип выражения
@@ -506,9 +558,4 @@ int main() {
 }
 
 ```
-
-- See also about [loopholes](https://stackoverflow.com/questions/65190015/c-type-loophole-explanation)
-
-
-==TODO== 02_init_list.cpp & other Dolta's listings
-
+- See also about [loopholes](https://stackoverflow.com/questions/65190015/c-type-loophole-explanation) (please don't do this)
