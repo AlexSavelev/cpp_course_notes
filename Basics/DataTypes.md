@@ -81,6 +81,7 @@ int& c = const_cast<int&>(b); // очень серьезный UB
 ## C-style cast
 - По очереди применяет все касты (поэтому юзать не надо)
 - Лучше явно писать нужный каст
+- В отличие от остальных C++ кастов, C-style-каст можно перегружать
 ### Cast order
 1. `const_cast`
 2. `static_cast`
@@ -91,6 +92,15 @@ int& c = const_cast<int&>(b); // очень серьезный UB
 # Conversions
 - `T` -> `[cv] T[&]`
 - `Derived&` -> `Base&`
+
+# About CV qualifier
+- [Source](https://en.cppreference.com/w/cpp/language/cv)
+## Introduction
+Any (possibly incomplete) type other than function type or reference type is a type in a group of the following four distinct but related types:
+- A _cv-unqualified_ version
+- A _const-qualified_ version
+- A _volatile-qualified_ version
+- A _const-volatile-qualified_ version
 
 
 cv - qualifiers

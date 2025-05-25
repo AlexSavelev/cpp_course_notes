@@ -1,30 +1,75 @@
-- Arithmetical (16): `+ - * / %` (and `+= -= *= /= %=`) (and `un. +, un. -`) (and `++pref, post++, --pref, post--`)
-- Bit (11): `& | ^ ~ << >>` (and `&= |= ^= <<= >>=`)
-- Logical (3): `&& || !` (not recommend, forgive lazy)
-- Specific (9): `, * ->` (has to return object that has `operator->` too) `->* () []` (from C++23 it's no binary operator) `= C-style_cast &`
-	- operator `,`: Matches left arg, right and returns right
-	- operator `()`: Invoke functor's method `operator()`
-- Compare: (still live in C++17) `== != (!(==)) < > (a < b => b < a) <= (!(b < a)) >= (!(a < b))`
-	- `using namespace std::rel_ops;` (from `utility`) allow not write `a > b` if there is `a < b`
-	- from C++20 it's default
-	- from C++20 also: `<=>` - operator spaceship (return: `std::strong_ordering` (always 99%) (less, greater, equal, equivalent), `std::weak_ordering` (less, greater, equivalent), `std::partial_ordering` (less, greater, equivalent, not_ordered)) (ex: (`3 <=> 5`) == `std::strong_ordering::less`) (objects can compare with 0 or other objects: less < 0, greater > 0, equivalent == equal == 0, not_ordered != 0)
-- Can't overload (4): `. .* ?: ::`
-	- Can't overload operators of base types (`int`, `ptr`, ...)
-	- Can't create new operators (exception: literal suffix operator)
-==TODO== https://en.cppreference.com/w/cpp/language/operators last
+# Types
+
+## Common operators
+
+| Assignment                                                                                                                         | Inc/Dec                          | Arithmetic                                                                                                                            | Logical                                                                            | Comparison                                                                      | Member access                                                    |
+| ---------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `a = b`<br>`a += b`<br>`a -= b`<br>`a *= b`<br>`a /= b`<br>`a %= b`<br>`a &= b`<br>`a \|= b`<br>`a ^= b`<br>`a <<= b`<br>`a >>= b` | `++a`<br>`--a`<br>`a++`<br>`a--` | `+a`<br>`-a`<br>`a + b`<br>`a - b`<br>`a * b`<br>`a / b`<br>`a % b`<br>`~a`<br>`a & b`<br>`a \| b`<br>`a ^ b`<br>`a << b`<br>`a >> b` | `!a`<br>`a && b`<br>`a \|\| b`<br>(не перегружай - потеряешь ленивость вычислений) | `a == b`<br>`a != b`<br>`a < b`<br>`a > b`<br>`a <= b`<br>`a >= b`<br>`a <=> b` | `a[...]`<br>`*a`<br>`&a`<br>`a->b`<br>`a.b`<br>`a->*b`<br>`a.*b` |
+- Overloading unary minus and plus is not very common and probably best avoided. If needed, they should probably be overloaded as member functions.
+- If you provide `+`, also provide `+=`, if you provide `-`, do not omit `-=`, etc.
+
+- Other:
+
+| Function call | Comma  | Conditional |
+| ------------- | ------ | ----------- |
+| `a(...)`      | `a, b` | `a ? b : c` |
+
+## Special operators
+- `static_cast` converts one type to another related type  
+- `dynamic_cast` converts within inheritance hierarchies  
+- `const_cast` adds or removes cv-qualifiers
+- `reinterpret_cast` converts type to unrelated type
+- `C-style cast` converts one type to another by a mix of static_cast, const_cast, and reinterpret_cast
+- `new` creates objects with dynamic storage duration
+- `delete` destructs objects previously created by the new expression and releases obtained memory area
+- `sizeof` queries the size of a type
+- `sizeof...` queries the size of a pack (since C++11)
+- `typeid` queries the type information of a type
+- `noexcept` checks if an expression can throw an exception (since C++11)
+- `alignof` queries alignment requirements of a type (since C++11)
+
+- [Source 1](https://stackoverflow.com/questions/4421706/what-are-the-basic-rules-and-idioms-for-operator-overloading#4421719)
+- [Source 2](https://en.cppreference.com/w/cpp/language/operators)
 
 `std::cout << x = 5; // 5`
 - С C++17 правая часть operator= вычисляется первой (`++x = x++`)
 
-# Priorities
+## **List of operators that cannot be overloaded**
+
+| No  | Operator           | Name                            |
+| --- | ------------------ | ------------------------------- |
+| 1   | `::`               | Scope Resolution Operator       |
+| 2   | `?:`               | Ternary or Conditional Operator |
+| 3   | `.`                | Member Access or Dot operator   |
+| 4   | `.*`               | Pointer-to-member Operator      |
+| 5   | `sizeof`           | Object size Operator            |
+| 6   | `typeid`           | Object type Operator            |
+| 7   | `static_cast`      | casting operator                |
+| 8   | `const_cast`       | casting operator                |
+| 9   | `reinterpret_cast` | casting operator                |
+| 10  | `dynamic_cast`     | casting operator                |
+
+# Overloading methods
+
+| Expr      | As member function     | As non-member function |
+| --------- | ---------------------- | ---------------------- |
+| `@a`      | `(a).operator@ ( )`    | `operator@ (a)`        |
+| `a @ b`   | `(a).operator@ (b)`    | `operator@ (a, b)`     |
+| `a = b`   | `(a).operator= (b)`    | cannot be non-member   |
+| `a(b...)` | `(a).operator()(b...)` | cannot be non-member   |
+| `a[b...]` | `(a).operator[](b...)` | cannot be non-member   |
+| `a->`     | `(a).operator->( )`    | cannot be non-member   |
+| `a@`      | `(a).operator@ (0)`    | `operator@ (a, 0)`     |
+- In this table, `@` is a placeholder representing all matching operators: all prefix operators in `@a`, all postfix operators other than `->` in `a@`, all infix operators other than `=` in `a@b`.
+
+# Operator precedence
 - [Article](https://en.cppreference.com/w/cpp/language/operator_precedence)
-==TODO==
+
 # Spaceship operator
 ```cpp
 #include <compare>
 #include <ios>
 #include <iostream>
-
 
 struct Int {
   int x;
