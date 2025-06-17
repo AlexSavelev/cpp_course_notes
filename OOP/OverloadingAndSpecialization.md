@@ -75,9 +75,9 @@ int main() {
 - [Source](https://en.cppreference.com/w/cpp/language/template_specialization)
 
 ```cpp
-template<typename T> // primary template
+template<typename T>  // primary template
 struct is_void : std::false_type {};
-template<>           // explicit specialization for T = void
+template<>            // explicit specialization for T = void
 struct is_void<void> : std::true_type {};
 ```
 
@@ -88,7 +88,7 @@ struct Vector {
 };
 
 template <>
-struct Vector<bool> { // Полная специализация шаблонного класса (придется заного написать класс, он не будет иметь ничего общего с Vector<T>)
+struct Vector<bool> {  // Полная специализация шаблонного класса (придется заного написать класс, он не будет иметь ничего общего с Vector<T>)
 	std::string g(std::vector<int>&) { ... }
 };
 ```
@@ -347,25 +347,26 @@ int main() {
 
 # Partial specialization
 - Частичная специализация
+- Так как у функций существует механизм перегрузки, то понятие частичной специализации к ним не применимо.
 - [Source](https://en.cppreference.com/w/cpp/language/partial_specialization)
 ### Syntax
 ```cpp
 template <typename T>
 class Vector<T*> { // Это специализация будет работать для всех T, которые являются указателями
     ...
-}
+};
 ```
 
 ```cpp
 template <typename T, typename U>
 class C {
     ...
-}
+};
 
 template <typename T>
 class C<T, int> { // работает по тем же правилам, что и перегрузка
     ...
-}
+};
 ```
 
 ### Rules

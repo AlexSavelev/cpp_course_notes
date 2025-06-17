@@ -503,3 +503,32 @@ void g(T&& value = "Hello") {  // CE. It is a lvalue: located in .text: "Hello" 
 rvalue vs lvalue
 1. 
 2. если ф-ция возвращает rvalue ссылку, то ф-ция - lvalue (rvalue) expr
+
+==TODO== Forward
+```cpp
+#include <type_traits>
+
+template <typename T>
+T&& Forward(std::remove_reference<T>& value) {  // we can't accept rvalue
+  return static_cast<T&&>(value);
+}
+
+// forward<int&> -> int& && -> int& => int& forward(...)
+// forward<int> -> int && -> int&& => int&& forward(...)
+
+template <typename T>
+T&& Forward(std::remove_reference<T>&& value) {
+  return static_cast<T&&>(value);
+}
+
+template <typename T>
+void f(T&& value) {
+  Forward<T>(value);
+}
+
+int main() {
+  f(10);  // T=int
+  int x = 1;
+  f(x);  // T=int&
+}
+```

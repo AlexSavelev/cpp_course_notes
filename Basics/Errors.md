@@ -28,6 +28,15 @@
 - *Note*: UB means: it's not a C++ program
 - [See more](https://en.cppreference.com/w/cpp/language/ub)
 
+```cpp
+int main() {
+  // При компиляции с -O2 получается вечный цикл
+  for (int i = 0; i < 300; ++i) {
+    std::cout << i << ' ' << i * 12345678 << std::endl;
+  }
+}
+```
+
 # UB - unspecified behavior
 - `[defns.unspecified]` behavior, for a well-formed program construct and correct data, that depends on the implementation
 - В отличии от implementation defined, разработчики систем/компиляторов не обязаны в документации это поведение описывать

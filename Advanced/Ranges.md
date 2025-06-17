@@ -371,3 +371,109 @@ auto operator|(R r, FilterClosure<P> c) {
 
 ## repeat
 - `repeat(3)` - постоянно возвращает `3`
+
+
+
+
+==TODO== filter view
+```cpp
+#include <cstddef>
+#include <iostream>
+#include <iterator>
+#include <ranges>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+template <std::ranges::range R, typename F>
+class FilterView : std::ranges::view_interface<FilterView<R, F>> {
+ private:
+  using base_iterator_t = std::ranges::iterator_t<R>;
+  using base_sentinel_t = std::ranges::sentinel_t<R>;
+
+  struct Iterator {
+    base_iterator_t iter_;
+    base_sentinel_t sent_;
+    FilterView* base_;
+
+    using difference_type = std::ptrdiff_t;
+    using value_type = std::iter_value_t<base_iterator_t>;
+    using reference = std::iter_reference_t<base_iterator_t>;
+    using iterator_category = std::forward_iterator_tag;
+
+    Iterator(FilterView* ptr, base_iterator_t iter, base_sentinel_t sent)
+        : base_(ptr), iter_(iter), sent_(sent) {}
+
+    Iterator& operator++() {
+      ++iter_;
+      while (iter_ != sent_ && not base_->predicate_(*iter_)) {
+        ++iter_;
+      }
+    }
+    Iterator& operator++(int) {
+      auto copy = *this;
+      ++(*this);
+      return copy;
+    }
+
+    reference operator*() const { return *iter_; }
+    bool operator==(const std::default_sentinel_t& sent) const {
+      return iter_ == sent;
+    }
+  };
+
+ public:
+  FilterView() = default;
+
+  template <std::ranges::range R2, typename F2>
+  FilterView(R2&& range, F2&& predicate)
+      : iter_(this, std::ranges::begin(range), std::ranges::end(range)),
+        predicate_(std::forward<F2>(predicate)) {}
+
+  Iterator begin() {
+    if (cached_) {
+      return iter_;
+    }
+    cached_ = true;
+    if (not predicate_(*iter_)) {
+      ++iter_;
+    }
+    return iter_;
+  }
+  auto end() const { return std::default_sentinel_t{}; }
+
+ private:
+  bool cached_ = false;
+  Iterator iter_;
+  F predicate_;
+};
+
+template <std::ranges::range R2, typename F2>
+FilterView(R2&& range,
+           F2&& predicate) -> FilterView<std::decay_t<R2>, std::decay_t<F2>>;
+
+void Print(auto container) {
+  for (auto elem : container) {
+    std::cout << elem << '\n';
+  }
+  std::cout << '\n';
+}
+
+template <std::size_t M>
+struct Predicator {
+  int y = 0;
+  bool operator()(auto x) {
+    ++y;
+    std::cout << "y = " << y << '\n';
+    return x % M == 0;
+  }
+};
+
+int main() {
+  std::vector<int> v = {1, 2, 3, 4, 5, 6, 7, 8};
+  // TODO: feature with begin()
+  auto filtered = FilterView(v, Predicator<2>{});
+  Print(filtered);
+  return 0;
+}
+```

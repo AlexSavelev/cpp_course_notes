@@ -111,7 +111,7 @@ public:
 	...
 };
 ```
-### Solution 2
+### Solution 2 - _Copy and swap_
 ```cpp
 class Vector {
 public:
@@ -157,6 +157,15 @@ int main() {
 
 # Comparison operator
 - Лучше делать вне класса
+- Вообще не обязательно определять ВСЕ операторы сравнения:
+	- через `==` можно выразить `!=`
+	- через `<` можно выразить ВСЕ (в т.ч. `==`, однако это 2 вызова `<`)
+```cpp
+bool operator==(const Int& lhs, const Int& rhs) {
+  return !(lhs < rhs) && !(rhs < lhs);
+}
+```
+
 - `std::rel_ops` творит чудеса
 ```cpp
 #include <iostream>

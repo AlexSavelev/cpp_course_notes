@@ -31,6 +31,15 @@
 - `y`
 - `make_array`
 
+## Statements
+- Код на C++ состоит из строчек, разделенных `;` (на самом деле не совсем)
+- Эти строчки это инструкции (statements)
+
+Statements можно разделить условно на три типа:
+1. Declarations (объявления)
+2. Expressions (выражения)
+3. Control statements (управляющие конструкции)
+
 ## Branches & loops
 
 ```cpp

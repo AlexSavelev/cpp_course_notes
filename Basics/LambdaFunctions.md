@@ -71,7 +71,7 @@ class S {
 };
 ```
 
-#### Захват по ссылке:
+#### Захват по ссылке
 ```cpp
 class S {
 	int a = 1;
@@ -80,7 +80,6 @@ class S {
 	}
 };
 ```
-==TODO== no ref is const?
 
 #### Захват по перемещению (Capture by Move)
 ```cpp

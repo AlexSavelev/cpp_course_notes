@@ -504,7 +504,7 @@ int main() {
     std::shared_ptr<Base> b_ptr = ptr;
 }
 ```
-==TODO== fill after HW
+- Он это умеет.
 
 ### All smart pointer casts
 - [Docs](https://en.cppreference.com/w/cpp/memory/shared_ptr/pointer_cast)

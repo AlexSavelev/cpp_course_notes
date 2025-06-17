@@ -32,6 +32,7 @@ Definition: `return_type function_name(ArgType1 arg1, ArgType2 arg2) { my_code }
 ### Aspects
 - Аргументы по умолчанию указываются в объявлении
 - Можно перегружать
+	- При этом в перегрузках можно менять возвращаемое значение - компиляции все равно это не помешает
 	- `void foo(double);`
 	- `void foo(int);`
 	- [Full list](https://en.cppreference.com/w/cpp/language/overload_resolution)
@@ -45,6 +46,20 @@ Definition: `return_type function_name(ArgType1 arg1, ArgType2 arg2) { my_code }
 - Переменное число аргументов
 	- `cstdarg`
 	- `int add_nums(int count, ...) { ... }`
+
+### Перегрузки
+
+Кратко про выбор перегрузки:
+- Точное совпадение всегда побеждает
+- Если точного совпадения нет, то выигрывает promotion (integer и float)
+- Если нет promotion то дальше идет Conversion
+```cpp
+void foo(float) {}
+void foo(int) {}
+
+int main() { foo(5.0); // CE call to foo is ambiguous }
+```
+_**Note**_ `double` -> `float` и `double` -> `int` это стандартные преобразования равнозначные с точки зрения компилятора
 
 ### Default arguments in general
 - The default arguments for functions are not bound to the function itself, but to the **calling context**: defaults declared for the function in the scope in which it is called will be used (See C++ standard, `[dcl.fct.default]`) 
@@ -122,7 +137,7 @@ C<int> c;  // OK, instantiates declaration void C::f(int n = 0, int)
 
 - in C: copy-paste func-body in code
 	- В C++ это тоже может служить подсказкой компилятору, что можно встроить код функции в момент вызова. Однако компилятор может это проигнорировать.
-- in C++: allow $>1$ definitions, I swear there is the same body
+- in C++: allow more than one definitions, I swear there is the same body
 	- `inline` - this function will be defined in multiple translation units, don't worry about it. The linker needs to make sure all translation units use a single instance of the variable/function.
 
 #### inline namespace

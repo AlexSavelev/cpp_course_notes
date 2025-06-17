@@ -22,19 +22,30 @@ a.c = 1.1;
 
 # Classes & structures in C++
 - `class` - кастомный data type, состоящий из набора полей и методов для взаимодействия с ними
-- `sizeof(class B) >= 1` всегда (даже если классы stateless, т.е. без полей)
+- `sizeof(any instance of class) >= 1` всегда (даже если классы stateless, т.е. без полей)
 
 # `operator.`, `operator->`
 - `.` - оператор для работы с объектами
 - `->` - оператор для работы с указателями на объект
 - `this` - указатель на текущий объект (писать его не надо)
-
 # Constructors
 - `T second = first; // вызывается не operator=, а конструктор`
-- `explicit` - запрет неявного каста (`Vector a = 10;` не равносильно `Vector(size: 10);`)
 
 ### `explicit`
-- Запрещает также неявный каст при вызове `operator Type()`
+- `explicit` - запрет этого неявного каста (`Vector a = 10;` не равносильно `Vector(size: 10);`)
+```cpp
+struct A {
+  A(int a, int b = 10) {}
+};
+
+int main() {
+  A a = 10;  // OK
+
+  return 0;
+}
+```
+
+- Также запрещает также неявный каст при вызове `operator Type()`
 ```cpp
 struct Demo {
     explicit operator bool() const { return true; }
@@ -67,18 +78,22 @@ int main() {
 
 # Destructor
 - Не принимает аргументов, поскольку вызывается, когда выходим из scope'а
+- Генерируется компилятором всегда (пустой)
 - Не надо самостоятельно вызывать деструктор (иначе UB)
 	- Можно только в том случае, когда дважды он точно не вызовется
-- `~Student() { ... }`
+- Syntax: `~Student() { ... }`
 
-# Порядок вызова при создании объекта
+# Порядок вызова
+## При создании
 1. Конструкторы полей класса
 2. Конструктор класса
-3. Деструктор класса
-4. Деструктор полей класса
+
+## При удалении
+1. Деструктор класса
+2. Деструктор полей класса
 
 # Friend
-- Не рефлексивна и не транзитивна
+- Отношение "A - это друг B" не симметрично и не транзитивно
 - Показатель плохого проектирования класса
 ```cpp
 #include <iostream>
@@ -113,6 +128,7 @@ int main() {
 }
 ```
 - Получается, конструкция `friend` так же является объявлением функции/класса.
+	- Это, к слову, используется в Loophole'ах
 
 # ADL
 - ADL - Argument Dependent Lookup
@@ -146,6 +162,7 @@ int main() {
 ==TODO== friend ADL [SOF](https://stackoverflow.com/questions/23831077/why-does-friend-function-found-successfully-via-adl) and [GL](https://gitlab.com/yaishenka/cpp_course/-/blob/main/sems/03_libs_and_ADL/05_friend_ADL.cpp?ref_type=heads) and [GL2](https://gitlab.com/yaishenka/cpp_course/-/blob/main/sems/03_libs_and_ADL/06_cringe.cpp?ref_type=heads) and [GL3](https://gitlab.com/Wanaphi/mipt_cpp_cs_seminars/-/blob/main/c_plus_plus_/02_operator_overloading/07_friend_ADL.cpp?ref_type=heads)
 
 # Static class members
+- Статичные поля/методы являются являются общими для всего класса
 
 ```cpp
 struct S { static int x; };
@@ -164,7 +181,7 @@ struct Foo {
 
 int main() {
   Foo f;
-  f.Bar();  // Вызовы эквивалетны
+  f.Bar();  // Вызовы эквивалентны
   Foo::Bar();
 }
 ```
@@ -207,3 +224,7 @@ int main() {
   s.foo(true);  // CE
 }
 ```
+
+# Правило трёх
+- Если класс такой, что вы определили нетривиальный конструктор, деструктор или оператор присваивания, то скорее всего, вам нужно реализовать все их.
+- Правило трех это исключительно словесное правило, компилятор ему не следует
