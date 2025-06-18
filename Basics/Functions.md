@@ -34,7 +34,7 @@ Definition: `return_type function_name(ArgType1 arg1, ArgType2 arg2) { my_code }
 - Можно перегружать
 	- При этом в перегрузках можно менять возвращаемое значение - компиляции все равно это не помешает
 	- `void foo(double);`
-	- `void foo(int);`
+	- `bool foo(int);`
 	- [Full list](https://en.cppreference.com/w/cpp/language/overload_resolution)
 	- В C, кстати, вообще перегрузок нет
 - Но есть ambiguous call
@@ -42,7 +42,7 @@ Definition: `return_type function_name(ArgType1 arg1, ArgType2 arg2) { my_code }
 	- `void foo(int);`
 	- `main: foo(5.0); // CE - double -> float OR double -> int ?!`
 - Указатель на функцию
-	- `return_type(*name)(arg1, arg2) = &f;`
+	- `ReturnType(*name)(ArgType1, ArgType2) = &f;`
 - Переменное число аргументов
 	- `cstdarg`
 	- `int add_nums(int count, ...) { ... }`
@@ -89,7 +89,7 @@ int main() {
 - С конструкциями типа:
 ```cpp
 struct S {
-  friend void f(int a = 3);
+  friend void f(int a = 3);  // friend declaration of ‘void f(int)’ specifies default arguments and isn’t a definition
   static void h() { f(); }
 };
 ```
@@ -115,9 +115,11 @@ void m() {
   f(4);                  // OK, calls f(4, 5);
   void f(int, int = 5);  // error: cannot redefine, even to same value
 }
+
 void n() {
   f(6);  // OK, calls f(6, 7)
 }
+
 template <class... T>
 struct C {
   void f(int n = 0, T...);

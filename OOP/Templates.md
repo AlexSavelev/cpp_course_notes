@@ -16,12 +16,17 @@ int main() {
 
 ### Cringe example
 ```cpp
+#include <iostream>
+
 template <typename T, typename U>
 const T& GetMax(const T& a, const U& b) {
-	return a > b ? a : b;
+  return a > b ? a : b;
 }
 
-GetMax(1, 2.0); // UB - возвращаю константную ссылку на временный объект (double -> int)
+int main() {
+  std::cout << GetMax(1, 2.0);  // UB - возвращаю константную ссылку на
+                                // временный объект (double -> int)
+}
 ```
 
 ### Aliases
@@ -40,7 +45,7 @@ MyMap<int> a; // std::map<int, int> a;
 template <typename T>
 const T pi = 3.14; // Cringe
 
-pi<int>, pi<double>, ...
+// pi<int>, pi<double>, ...
 ```
 
 ### Template method of template class
@@ -128,7 +133,7 @@ f<int&>(y); // int& & -> int&
 ```
 
 ### Pretty function
-- Позволяет показать информацию о вызываемой уже инстанцированной функции
+- Позволяет показать информацию о вызываемой, уже инстанцированной, функции
 ```cpp
 template <typename T>
 void foo() {
@@ -194,7 +199,7 @@ int main() {
 	Stack<int, std::vector> stack;
 }
 ```
-
+- To use template template syntax to pass a parameter whose type is a template dependent on another template
 ### Шаблонные аргументы по умолчанию
 ```cpp
 template <typename T, typename Cmp = std::less<T>>
@@ -465,7 +470,7 @@ sizeof...(tail) // sizeof пакета
 
 template <typename... Args>
 int sum(const Args&... args) {
-  return (... + (args * args));
+  return (0 + ... + (args * args));  // 0 needs for base (sum())
 }
 
 template <typename... Args>

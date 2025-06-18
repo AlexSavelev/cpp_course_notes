@@ -141,6 +141,10 @@ swap(a[0], a[1]);  // std::swap
 ```
 
 ```cpp
+std::cout << "Hello world";  // There is no operator<< in global namespace, but ADL examines std namespace because the left argument is in std and finds std::operator<<(std::ostream&, const char*)
+```
+
+```cpp
 #include <iostream>
 
 namespace A {
@@ -157,9 +161,22 @@ int main() {
 }
 ```
 
+```cpp
+#include <iostream>
 
-==TODO== ADL source rasshar
-==TODO== friend ADL [SOF](https://stackoverflow.com/questions/23831077/why-does-friend-function-found-successfully-via-adl) and [GL](https://gitlab.com/yaishenka/cpp_course/-/blob/main/sems/03_libs_and_ADL/05_friend_ADL.cpp?ref_type=heads) and [GL2](https://gitlab.com/yaishenka/cpp_course/-/blob/main/sems/03_libs_and_ADL/06_cringe.cpp?ref_type=heads) and [GL3](https://gitlab.com/Wanaphi/mipt_cpp_cs_seminars/-/blob/main/c_plus_plus_/02_operator_overloading/07_friend_ADL.cpp?ref_type=heads)
+class C {
+  friend int foo(C) { return 10; }
+};
+
+int main() {
+  // foo();
+  //::foo();
+  C c;
+  std::cout << foo(c) << '\n';
+}
+```
+
+==TODO== friend ADL [SOF](https://stackoverflow.com/questions/23831077/why-does-friend-function-found-successfully-via-adl)
 
 # Static class members
 - Статичные поля/методы являются являются общими для всего класса

@@ -11,7 +11,7 @@ Color a = BLUE; // It's a global scope const
 - Обычный `enum` вносит все свои константы в глобальную область видимости
 - Это не очень хорошо, поэтому в C++11 ввели `enum class`
 
-# Good code (C++):
+# Good code (C++) (scoped enumeration):
 - Syntax: `enum class|struct EnumName { ... };`
 ```cpp
 enum class Color {

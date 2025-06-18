@@ -39,6 +39,15 @@ std::cout << a; // 2
 	- `int&* a = &c; // CE`
 - _**Note**_ ссылка привязывается на все время своего существование. То есть если у нас есть ссылка `second` которая указывает на переменную `first`, то эту ссылку нельзя перепривязать ни к чему другому.
 
+- Указателя на ссылку нет - есть ссылка на указатель
+```cpp
+int a = 5;
+int* ptr = &a;
+
+int*& link_to_ptr = ptr;
+int&* ptr_to_link = ???;  // CE
+```
+
 # Works with constants
 
 ### Pointer to constant
@@ -132,9 +141,12 @@ int main() {
 ```
 
 # `ptrdiff_t`
-- Implementation defined
+- Defined in header `<cstddef>`
+- `typedef /*implementation-defined*/ ptrdiff_t;`
+- `std::ptrdiff_t` is the signed integer type of the result of subtracting two pointers.
+
+### Possible implementation
 ```cpp
 // valid since C++11
 using ptrdiff_t = decltype(static_cast<int*>(nullptr) - static_cast<int*>(nullptr));
 ```
-

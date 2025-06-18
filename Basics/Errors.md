@@ -17,7 +17,7 @@
 # RE - runtime error
 - segmentation fault - обращение к "плохой" памяти
 - div by `0`
-- exception
+- uncaught exception
 - double free (is not exception)
 
 # UB - undefined behavior
@@ -68,9 +68,9 @@ int main() {
 - Program behavior depends on compiler realization
 	- `sizeof(int)`, `sizeof(T*)`, `sizeof(size_t)`
 	- number of bits in a byte
-	- text of std::bad_alloc::what
+	- text of `std::bad_alloc::what`
 	- STL realization (`std::set<T>` cans be: AVL-tree, Red-black-tree)
-	- mapping in `reinterpret_cast` (5.2.10.3) (mapping - отображение)
+	- mapping in `reinterpret_cast` (mapping - отображение)
 - It's documented
 - [More  about UdfB, UspB, IDB](https://habr.com/ru/articles/450910/)
 

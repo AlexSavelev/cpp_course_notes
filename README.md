@@ -14,7 +14,7 @@
 | 9   | [Enums](OOP/Enums.md)                                                                                  | 1                |
 | 10  | [Member references](OOP/MemberReferences.md)                                                           | 3                |
 | 11  | [Const members](OOP/ConstMembers.md)                                                                   | 2                |
-| 12  | [Templates](OOP/Templates.md)<br>- [Overloading & specialization](OOP/OverloadingAndSpecialization.md) | 3                |
+| 12  | [Templates](OOP/Templates.md)<br>- [Overloading & specialization](OOP/OverloadingAndSpecialization.md) | 5                |
 | 13  | [Inheritance](OOP/Inheritance.md)<br>- [Dynamic polymorphism](OOP/DynamicPolymorphism.md)              | 3                |
 | 14  | [Lambda functions](Basics/LambdaFunctions.md)                                                          | 2                |
 | 15  | [Iterators](Advanced/Iterators.md)                                                                     | 2                |

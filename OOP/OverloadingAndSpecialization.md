@@ -64,7 +64,7 @@ int main() {
 - Any of the following can be fully specialized:
     1. function template
 	2. class template
-    3. variable template(since C++14)
+    3. variable template (since C++14)
     4. member function of a class template
     5. static data member of a class template
     6. member class of a class template
@@ -338,10 +338,10 @@ void bar() {
 }
 
 int main() {
-//   SumOfTwo<int>(3, 2);  
-//   SumOfTwo<long long>(3, 2);  
-//   SumOfTwo<double>(3, 2);
-//   bar<int>();
+  SumOfTwo<int>(3, 2);  
+  SumOfTwo<long long>(3, 2);  
+  SumOfTwo<double>(3, 2);
+  bar<int>();
 }
 ```
 
@@ -603,7 +603,7 @@ template <typename T>
 void f(T, T) { std::cout << 2; }
 
 template <>
-void f(int, int) { 3 }
+void f(int, int) { std::cout << 3; }
 
 int main() {
 	f(0, 0); // 3 (среди перегрузок мы выбрали вторую, так как она более частная. А у нее уже выбрали специализацию)
@@ -653,7 +653,6 @@ void foo(T) {
 
 template <typename T>
 void foo(T*) {
-
   std::cout << 2 << '\n';
 }
 
@@ -665,7 +664,6 @@ void foo(int) {
 int main() {
   foo(10);  // 3
 }
-
 ```
 
 ### Example 5
@@ -720,8 +718,8 @@ void baz(int*, int*) {
 
 int main() {
   int* ptr = nullptr;
-  baz(ptr, ptr);
-  baz<int*, int*>(ptr, ptr);  // 4 - выберет специализацию (4) наиболее подходящего шаблона (3)
+  baz(ptr, ptr);  // 4 - выберет специализацию (4) наиболее подходящего шаблона (3)
+  baz<int*, int*>(ptr, ptr);  // 2
 }
 ```
 
