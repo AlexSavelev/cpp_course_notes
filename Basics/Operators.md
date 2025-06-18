@@ -75,12 +75,12 @@ struct Int {
   int x;
   int y;
 
-  std::strong_ordering operator<=>(const Int& other) const = default;
-  // bool operator==(const Int& other) const = default;
-  friend bool operator==(const Int&, const Int&) = default;
+  std::strong_ordering operator<=>(const Int& other) const = default;  // variant 4
+  // bool operator==(const Int& other) const = default;  // variant 1
+  // friend bool operator==(const Int&, const Int&) = default;  // variant 3
 };
 
-// bool operator==(const Int&, const Int&) {}
+// bool operator==(const Int&, const Int&) {}  // variant 2
 
 int main() {
   Int x{1, 1},
@@ -159,7 +159,7 @@ int main() {
 - Лучше делать вне класса
 - Вообще не обязательно определять ВСЕ операторы сравнения:
 	- через `==` можно выразить `!=`
-	- через `<` можно выразить ВСЕ (в т.ч. `==`, однако это 2 вызова `<`)
+	- через `<` можно выразить ВСЕ (по идее, даже `==` через 2 вызова `<`, но это может быть дорого и не определено, поэтому `std::relops` не заполняет)
 ```cpp
 bool operator==(const Int& lhs, const Int& rhs) {
   return !(lhs < rhs) && !(rhs < lhs);
@@ -387,8 +387,8 @@ int main() {
 | `std::weak_ordering`    | ЛУМ*     | `std::partial_ordering`                       |
 | `std::partial_ordering` | ЧУМ**    | -                                             |
 
-- $*$Частично упорядоченное множество
-- $**$Линейно упорядоченное множество
+- $*$Линейно упорядоченное множество
+- $**$Частично упорядоченное множество
 
 ### `std::strong_ordering` structure
 ```cpp
