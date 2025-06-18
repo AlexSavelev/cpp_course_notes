@@ -55,10 +55,10 @@ std::transform(v.begin(), v.end(), out_begin, [](int n) {return n * 2; });
 - Проблемы:
 	- Копирование
 	- Проходимся дважды вместо одного раза
-	- Около ленивое поведение реализовать не получится
+	- То есть около ленивое поведение реализовать не получится
 
 # Ranges
-- Solution of prev problem seem like:
+- Solution of previous problem seems like:
 ```cpp
 auto v = std::ranges::istream_view<int>(std::cin)
              | std::ranges::views::filter([](int n){return n < 5; })
@@ -86,6 +86,7 @@ using sentinel_t = decltype(ranges::end(declval<T&>()));
 ```cpp
 template <typename T> concept input_range = range<T> && input_iterator<iterator_t<T>>;
 ```
+- Остальные ranges определяются аналогичным образом
 
 ### `ranges::sort`
 ```cpp
@@ -98,13 +99,26 @@ constexpr ranges::borrowed_iterator_t<R>
 
 - `random_access_range` - range с категорией random_access
 - `Comp` - предикат из библиотеки `ranges`
-- Проектор - некий функтор, который "проецирует" объект. Например можно использовать указатель на член класса `&Class::field`
+- Проектор `Proj` - некий функтор, который "проецирует" объект. Например можно использовать указатель на член класса `&Class::field`
 
 ```cpp
 ranges::sort(v, [](Struct a, Struct b) {return a.x < b.x; });
 ranges::sort(v, {}, [](Struct a) {return a.x; });
 ranges::sort(v, {}, &Struct::x);
 ```
+
+- Встает вопрос, что возвращать:
+	1. Ничего (как `std::sort`)
+	2. Отсортированный range
+	3. Итератор на конец отсортированного диапозона
+- На самом деле, работая с ranges, хочется возвращать именно что итератор на конец отсортированного диапозона, чтобы например делать такое:
+	- `ranges::unique(ranges::begin(vec), ranges::sort(vec));`
+- Но есть проблема: итератор может "провиснуть"
+```cpp
+auto it = ranges::sort(foo());
+auto elem = *it; // все сломалось
+```
+- Стоит ввести специальную обертку
 
 ### `borrowed_iterator`
 - `borrowed_iterator_t` это обертка: содержит либо итератор, либо `ranges::dangling` (который просто нельзя разыменовать)
@@ -115,8 +129,18 @@ concept borrowed_range = ranges::range<R> &&
      ranges::enable_borrowed_range<std::remove_cvref_t<R>>);
 ```
 
-- То есть `dangling` будет возвращаться если это rvalue и не включен `enable_borrowed_range` для этого класса
+- То есть `dangling` будет возвращаться, если это rvalue и не включен `enable_borrowed_range` для этого класса
 - `enable_borrowed_range` можно выставить для своего класса, в STL он выставлен в `true` например для `std::basic_string_view` (не может провиснуть даже если rvalue)
+
+- Possible implementation of `borrowed_iterator_t`
+```cpp
+template<std::ranges::range R>
+using borrowed_iterator_t = std::conditional_t<
+	std::ranges::borrowed_range<R>,
+	std::ranges::iterator_t<R>,
+	std::ranges::dangling
+>;
+```
 
 # `views`
 ```cpp
@@ -124,10 +148,10 @@ template <typename T> concept view = range<T> && movable<T> && enable_view<T>;
 template <typename T> constexpr bool enable_view = derived_from<T, view_base>;
 ```
 
-- Интуитивно: отображение это не владеющий диапозон
+- Интуитивно: отображение это не владеющий диапазон
 - Что-то похожее уже было: `string_view` (владеет `char*` и `size*`)
 - Проблемы:
-	- Не знает на что он `view` (всегда `view` просто на `char*`)
+	- Не знает, на что он `view` (всегда `view` просто на `char*`)
 	- Не может вернуть объект, на который он `view`
 - Альтернатива: `rev_view`
 
@@ -151,22 +175,30 @@ auto sv = views::all(s);
 
 # `sentinel`
 ```cpp
-int accumulate(const ranges::input_range auto& coll) {
-    int acc = 0; for (auto &elem : coll) acc += elem;
-    return acc;
+#include <iostream>
+#include <ranges>
+#include <vector>
+
+int accumulate(const std::ranges::input_range auto& coll) {
+  int acc = 0;
+  for (auto& elem : coll) acc += elem;
+  return acc;
 }
 
 template <int Value>
 struct EndValue {
-    template <typename It>
-    bool operator==(It it) const {
-        return *it == Value;
-    }
-}
+  template <typename It>
+  bool operator==(It it) const {
+    return *it == Value;
+  }
+};
 
-std::vector<int> v{1, 2, 3, 4};
-auto w = ranges::subrange(v.begin() + 1, EndValue<4>{});
-auto res = accumulate(w);
+int main() {
+  std::vector<int> v{1, 2, 3, 4};
+  auto w = std::ranges::subrange(v.begin() + 1, EndValue<4>{});
+  auto res = accumulate(w);
+  std::cout << res;  // 2 + 3 = 5
+}
 ```
 
 # `subrange`
@@ -184,6 +216,7 @@ for (auto& [k, v] : ranges.subrange(first, last)) {
 class FibIter {
  public:
   int operator*() const {return cur_; }
+
   FibIter& operator++() {
     cur_ = std::exchange(next_, cur_ + next_);
     return *this;
@@ -248,7 +281,11 @@ auto fib_sub = ranges::subrange{fib_i, std::default_sentinel};
 ```cpp
 template<typename T>
 concept common_range = ranges::range<T> &&
-                       std::same_as<ranges::iterator_t<T>, ranges::sentinel_t<T>>;
+                       std::same_as<
+	                       ranges::iterator_t<T>,
+	                       ranges::sentinel_t<T>
+	                    >;
+
 auto c1 = std::ranges::common_view{r1};
 ```
 - `c1` уже можно передавать в стандартные алгоритмы

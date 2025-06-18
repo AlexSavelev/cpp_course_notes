@@ -1,6 +1,7 @@
 A placeholder type specifier designates a _placeholder type_ that will be replaced later, typically by deduction from an initializer.
 
 # `auto`
+- Since C++11
 - Позволяет иногда не писать тип создаваемого объекта
 - `for(auto it = map.begin(); it != map.end(); ++it) { ... }`
 - `for(auto item : map) { ... }`
@@ -15,6 +16,7 @@ const auto& y = x;
 
 ### Rules
 - Type is deduced using the rules for template argument deduction
+	- `auto y = x;` is the same that `f(T value); f(x);`
 - Отличие только одно: `auto` может выводить `std::initializer_list`
 ```cpp
 template <typename T>
@@ -60,18 +62,6 @@ auto f(int& x) {
 } // CE
 ```
 
-### `auto` в качестве типа переменной
-```cpp
-#include <iostream>
-
-template <auto X>
-auto cringe = X;
-
-int main() {
-	std::swap(cringe<1>, cringe<2>);
-}
-```
-
 ### `auto` при `if constexpr`
 - `if constexpr` разрешается до `auto`
 ```cpp
@@ -96,7 +86,7 @@ auto f(int x) -> int {
 ```
 
 ### `auto` в аргументах функций
-- since C++20
+- Since C++20
 - Буквально сокращение шаблонов
 	- То есть с `std::initializer_list` не прокатит
 ```cpp
@@ -108,7 +98,7 @@ void f(auto&& x) {  // сокращение шаблонов
 
 int main() {
   f(1);  // void f(auto:16&&) [with auto:16 = int]
-  // f({1, 2, 3});  CE
+  // f({1, 2, 3});  // CE
 }
 ```
 
@@ -120,7 +110,19 @@ void f(auto... x) {
 ```
 
 ### `auto` как шаблонный аргумент
-- See `auto` templates in Templates page
+- Also see `auto` templates in Templates page
+
+- Также можно создавать шаблонные переменные
+```cpp
+#include <iostream>
+
+template <auto X>
+auto cringe = X;
+
+int main() {
+	std::swap(cringe<1>, cringe<2>);
+}
+```
 
 ### Conclusion example
 ```cpp
@@ -173,6 +175,7 @@ int main() {
 
 
 # `decltype`
+- Since C++11
 - Метафункция, которая в compile-time возвращает тип выражения
 ```cpp
 int x;
@@ -196,8 +199,11 @@ decltype((x)) y;  // expression
 ```
 Вывод типов в `decltype(expr)` работает по следующим правилам:
 1. if the value category of expression is xvalue, then `decltype` yields `T&&`;
+	- `decltype(std::move(x))`
 2. if the value category of expression is lvalue, then `decltype` yields `T&`;
+	- `decltype(++x)`
 3. if the value category of expression is prvalue, then `decltype` yields `T`.
+	- `decltype(x++)`
 
 ### Навешивание на `decltype`
 - Можно также всякое навешивать
@@ -220,11 +226,11 @@ int main() {
 	f<decltype(z)>(); // T = T&
 }
 ```
-- Это происходит потому что `const` навешивается не на то что лежит под ссылкой а на саму ссылку. А ссылки и так нельзя перевешивать (т.е. они и так константные)
+- Это происходит потому что `const` навешивается не на то, что лежит под ссылкой, а на саму ссылку. А ссылки и так нельзя перевешивать (т.е. они и так константные)
 
 ### Example 2
 - Код внутри `decltype` не выполняется - это compile-time конструкция
-	- Он просто из сигнатуры выражения возьмет возвращаемый тип
+	- Он просто возьмет из сигнатуры выражения возвращаемый тип
 ```cpp
 int x = 0;
 decltype(++x) y = x;  // y = [int&]
@@ -251,7 +257,7 @@ template <typename T>
 - `decltype` тоже не поможет, тк `x` еще не объявлен
 ```cpp
 template <typename T>
-decltype(some_func(x)) g(const T& x) {
+decltype(some_func(x)) g(const T& x /* point of decl. here */) {
   return some_func(x)
 }
 ```
@@ -275,15 +281,16 @@ auto get(const Container& c, size_t i) -> decltype(c[i]) {
 
 ### `decltype(auto)`
 - С C++14
-- Механизм выводить тип не по правилам `auto` а по правилам `decltype`
+- Механизм выводить тип не по правилам `auto`, а по правилам `decltype`
 	- `statement`/`expression` также определяется
 
 ```cpp
 template <typename Container>
-auto ...
+decltype(auto) get(const Container& c, size_t i) {
+  return c[i];
+}
 ```
 
-- `decltype(auto)` можно так же использовать в других выражениях (при инициализации например)
 ```cpp
 int x = 0;
 int& y = x;

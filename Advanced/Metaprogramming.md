@@ -107,7 +107,7 @@ void g(const T&) {
   std::cout << 1;
 }
 
-template <typename T, typename = std::enable_if_t<!std::is_class_v<std::remove_reference_t<T>>>, typename = void>  // последнее ввели, чтобы исключить ошибку о перегрузке с одинаковой сигнатурой
+template <typename T, typename = std::enable_if_t<!std::is_class_v<std::remove_reference_t<T>>>, typename = void>  // последнее ввели, чтобы исключить ошибку о "перегрузке" с одинаковой сигнатурой
 void g(const T&) {
   std::cout << 2;
 }
@@ -127,11 +127,10 @@ void g(const T&) {
   std::cout << 2;
 }
 ```
-==TODO== `T&&` приоритетнее чем `const T&`
 
 ### Possible implementation
 - Работает достаточно просто: при использовании `enable_if` мы обращаемся к `enable_if::type`. В случае `false` внутри `enable_if` `type` нет => ошибка шаблонной подстановки => SFINAE
-- Во втором примере у нас есть две шаблонные функции с аргументами `typename T`, и неким `std::enable_if_t` (который превращается либо во что-то невалидное, либо в `bool`)
+- Во примере у нас как раз есть две шаблонные функции с аргументами `typename T`, и неким `std::enable_if_t` (который превращается либо во что-то невалидное, либо в `bool`)
 - Но с точки зрения шаблонной сигнатуры последний аргумент разный
 ```cpp
 template <bool B, typename = void>
@@ -151,7 +150,7 @@ using enable_if_t = typename enable_if<B,T>::type;
 - Для этого существует функция `declval` (`#include <utility>`)
 ```cpp
 template <typename T>
-T declval() noexcept;
+T&& declval() noexcept;
 ```
 
 - Вообще реализация выглядит следующим образом
@@ -161,8 +160,30 @@ typename std::add_rvalue_reference<T>::type declval() noexcept {
     static_assert(false, "declval not allowed in an evaluated context");
 }
 ```
-- Возврат rvalue reference позволяет определять `declval` в т.ч. и для incomplete-типов (абстрактные классы, просто `struct S;`), и тех, где не определен конструктор копирования и тд.
+- Возврат rvalue reference позволяет определять `declval` в т.ч. и для incomplete-типов (абстрактные классы, а также классы без тела), и тех, где не определен конструктор по умолчанию и тд.
 	- `T&&` нельзя, потому что при `T = [void]` будет invalid
+
+### `has_method_construct`
+- Хотим проверить, есть ли у произвольного класса метод `construct` с данными аргументами
+- Писать `TT` и `AArgs` необходимо: `T` - шаблонный параметр класса, а не функции => SFINAE этим не заведует
+
+```cpp
+template <typename T, typename... Args>
+struct has_method_construct {
+ private:
+  template <typename TT, typename... AArgs>
+  static auto f(int) -> decltype(declval<TT>().construct(declval<AArgs>()...), int());  // operator, (evaluates L and R then returns R)
+
+  template <typename...>
+  static char f(...);
+
+ public:
+  static const bool value = std::is_same_v<decltype(f<T, Args...>(0)), int>;
+};
+
+template <typename T, typename... Args>
+const bool has_method_construct_v = has_method_construct<T, Args...>::value;
+```
 
 ### Практика. `AddLvalueReference`
 ```cpp
@@ -197,27 +218,6 @@ int main() {
   std::cout << std::is_same_v<AddLvalueReferenceT<void>, void>;
   std::cout << std::is_same_v<AddLvalueReferenceT<int>, int&>;
 }
-```
-
-# `has_method_construct`
-- Хотим проверить, есть ли у произвольного класса метод `construct` с данными аргументами
-
-```cpp
-template <typename T, typename... Args>
-struct has_method_construct {
- private:
-  template <typename TT, typename... AArgs>
-  static auto f(int) -> decltype(declval<TT>().construct(declval<AArgs>()...), int());  // operator, (evaluates L and R then returns R)
-
-  template <typename...>
-  static char f(...);
-
- public:
-  static const bool value = std::is_same_v<decltype(f<T, Args...>(0)), int>;
-};
-
-template <typename T, typename... Args>
-const bool has_method_construct_v = has_method_construct<T, Args...>::value;
 ```
 
 ### Практика: проверяем наличие оператора сравнения
@@ -269,7 +269,7 @@ void Vector<T>::reserve(size_t n) {
   size_t i = 0;
   try {
     for (;i < size_; ++i) {
-      AllocTraits::construct(alloc_, new_arr + i, std::move(arr_[i])); // тут нужно копировать если std::move кидает ошибку
+      AllocTraits::construct(alloc_, new_arr + i, std::move(arr_[i])); // тут нужно копировать, если std::move может кинуть ошибку
     }
   } catch (...) {
     for (size_t j = 0; j < i; ++j) {
@@ -307,6 +307,8 @@ move_if_noexcept(T& x) noexcept
 
 # `std::is_base_of`
 ### Implementation 1
+- Для публичного однозначного наследования все работает, но есть проблема с приватным:
+	- Мы выбираем нужную перегрузку, но каст `D*` к `B*` в аргументах это нарушение приватности (а приватность, как мы помним, проверяется в самом конце). Поэтому получаем CE и никакого SFINAE не происходит
 ```cpp
 template <typename B, typename D>
 std::true_type test_is_base_of(const B*);
@@ -373,7 +375,6 @@ int main() {}
 
 # Type switch
 - [Source](https://stackoverflow.com/questions/22822836/type-switch-construct-in-c11)
-
 ### Implementation
 ```cpp
 #include <cassert>

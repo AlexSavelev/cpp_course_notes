@@ -4,9 +4,9 @@
 
 # Range-based for
 `for (auto x : v) { ... }`
-- Equivalent to: `for (it = ...) { auto x = *it; ... }`
+- Интерпретируется как: `for (it = ...) { auto x = *it; ... }`
 	- `*it` - unnaming
-- Always write `auto`
+- Лучше всегда писать через `auto`
 	- Better: `const auto&` or `auto&` (if we want to change it)
 
 # Iterators categories
@@ -35,20 +35,20 @@
 # `std::iterator_traits<Iter>`
 - Это специальная структура данных, которая позволяет унифицированно работать с итераторами
 - Внутри этой структуры есть следующие юзинги:
-	1. difference_type
-	2. value_type
-	3. pointer
-	4. reference
-	5. iterator_category
+	1. `difference_type`
+	2. `value_type`
+	3. `pointer`
+	4. `reference`
+	5. `iterator_category`
 - `typename std::iterator_traits<Iter>::value_type val = *it;`
 
 - `iterator_traits` определяет эти поля следующим образом:
 	- До C++20: если в `Iterator` нет хотя бы одного из 5 юзингов то `std::iterator_traits` пустая. Иначе все юзинги равны соответствующим юзингам из `Iterator`.
-	- Начиная с C++20: если в Iterator нет юзинга pointer (но есть все остальное), то pointer = void, остальное по той же схеме.
+	- Начиная с C++20: если в `Iterator` нет юзинга `pointer` (но есть все остальное), то `pointer = void*`, остальное по той же схеме.
 _**Note**_ `iterator_traits` можно специализировать для своего класса
 
 # `std::advance`
-- Эта функция позволяет "продвинуть" итератор на n шагов
+- Эта функция позволяет "продвинуть" итератор на $n$ шагов
 - `std::advance(it, 3);`
 
 ### Realization - version 1
@@ -92,6 +92,9 @@ void Advance(Iter& it, int n) {
   Helper(it, n, std::iterator_traits<Iter>::iterator_category());
 }
 ```
+
+### Realization - version 3
+- Можно реализовать через `if constexpr`. См. Constexpr
 
 # Const iterators
 - `vector<int>::const_iterator`

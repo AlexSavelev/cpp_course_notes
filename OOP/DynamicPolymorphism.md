@@ -8,17 +8,19 @@ struct Son: Mom, Dad { int s;};
 
 // sizeof(Son) == 40;
 ```
+
 ### `Son` object structure
 
 | ptr | mom | ptr | dad | son | granny |
 | --- | --- | --- | --- | --- | ------ |
 | 8   | 4   | 8   | 4   | 4   | 4      |
 
-- Также заводится специальная таблица в статической памяти, в которой для каждого типа написано, на какой сдвиг от начала объекта нужно переместиться чтобы найти бабушку
+- Заводится специальная таблица в статической памяти, в которой для каждого типа написано, на какой сдвиг от начала объекта нужно переместиться чтобы найти бабушку
 - Этот указатель указывает на запись в этой таблице
 - _**Def**_ Эта таблица называется vtable
 
-# Basics 
+# Basics of dynamic polymorphism
+- _**Def**_ Полиморфизм - это способность функции обрабатывать данные разных типов
 - Статический полиморфизм - перегрузка функций, шаблоны
 - Сейчас же вводится динамический
 ### Solution
@@ -58,7 +60,31 @@ int main() {
 - Механизм виртуальных функций работает только при полном совпадении сигнатур
 - Существует ключевое слово `final`, которое запрещает наследникам переопределять эту виртуальную функцию
 
+- Рассмотрим еще пример:
+```cpp
+struct Base {
+  virtual void f() { std::cout << 1; }
+};
+
+struct Derived: Base {
+  void f() const {std::cout << 2; }
+};
+
+int main() {
+  Derived d;
+  Base& b = d;
+  b.f();
+}
+```
+- `f` в `Derived` не является виртуальной, потому что не совпадает сигнатура
+- То есть механизм виртуальных функций работает только при полном совпадении сигнатур
+- Если навесить на вторую `f` `override`, будет CE
+
+- Поэтому, чтобы не ошибаться, можно (и даже нужно) использовать ключевое слово `override`
+
 ### `final` and `override`
+- Существует ключевое слово `final`, которое запрещает наследникам переопределять эту виртуальную функцию
+
 - [Source](https://stackoverflow.com/questions/29412412/does-final-imply-override)
 - See the examples:
 ```cpp
@@ -131,6 +157,7 @@ In conclusion, the best practice is:
 - always use `override` to specify override virtual function in derived class, unless `final` is also specified.
 
 #### Final classes and structs
+- `final` еще может быть использовано в наследовании, чтобы запретить дальше наследоваться: `struct B final : A { ... };`
 ```cpp
 // ...
 struct Derived final : Base {
@@ -141,15 +168,16 @@ struct Derived final : Base {
 #### Final profit
 - С методами/классами, подмеченными как `final` работа окажется в разы быстрее: компилятор видит "финальность" и не находит необходимым лезть в vtable.
 
-
 ### Abstract classes
-- Это классы, в которых есть хотя бы один `pure virtual` метод (`virtual void foo() = 0;`)
+- Это классы, в которых есть хотя бы один pure virtual метод (`virtual void foo() = 0;`)
 
 Для абстрактного класса верно следующее:
 1. Создать объект абстрактного класса нельзя (CE)
 2. Можно заводить указатели и ссылки на абстрактный класс
 3. Если наследник не переопределит все чисто виртуальные методы родителя, то наследник тоже будет считаться абстрактным классом
 #### Example
+- При этом можно написать реализацию pure virtual метода, однако класс в этом случае все равно не перестает быть абстрактным
+
 ```cpp
 #include <iostream>
 
@@ -171,10 +199,16 @@ int main() {
 }
 ```
 
-Класс все равно не перестает быть абстрактным.
+- Если же убрать определение `Animal::Say`, то будет ошибка
+```OUT
+/usr/bin/ld: /tmp/ccvvm60A.o: in function `main':
+main.cpp:(.text+0x25f): undefined reference to `Animal::Say()'
+collect2: error: ld returned 1 exit status
+```
 
 ### Virtual destructor
 - Must have
+	- Если в наследнике выделяется динамическая память, которая чиститься как раз в деструкторе, то, работая с этим классом от имени родителя, можем допустить утечку памяти
 
 ```cpp
 struct Base {
@@ -201,12 +235,32 @@ int main() {
 
 ### Аргументы по умолчанию
 - Аргумент по умолчанию берется и того класса, из которого мы метод вызываем
+```cpp
+#include <iostream>
+
+struct S {
+  virtual void f(int a = 10) = 0;
+};
+
+struct C : S {
+  void f(int a = 20) override { std::cout << a << '\n'; }
+};
+
+int main() {
+  C c;
+  c.f();  // 20
+
+  S& s = c;
+  s.f();  // 10
+}
+```
 
 # RTTI
 - Run Time Type Identification
-- Невозможно в compile time определить дочерний тип
+	- Динамическая идентификация типов данных
+- Проблема: невозможно в compile time определить дочерний тип
 
-_**Def**_ Тип называется полиморфным если у него есть хотя бы одна виртуальная функция
+_**Def**_ Тип называется полиморфным, если у него есть хотя бы одна виртуальная функция
 
 ### `dynamic_cast`
 - Умеет работать только с полиморфными типами
@@ -257,6 +311,7 @@ struct Base {
 `sizeof(Base)` = 16
 Base structure: `[ptr to vtable][x][4 bytes of padding]`
 VTable record: `[ptr to type_info][&Base::f]`
+- `type_info` при этом хранится где-то в статической памяти
 
 ### Derived
 
@@ -290,6 +345,13 @@ struct Son: Mom {
 ```
 
 Son structure: `[ptr to vtable][g][m][s]`
+
+- При этом:
+```cpp
+Son s;
+Granny& g = s;
+dynamic_cast<Son&>(g); // CE, source type is not polymorphic
+```
 
 # Default arguments for virtual functions
 - The function declaration (and its defaults) that is considered is the one of the object class known by the compiler. So the same function of the same object may have different default arguments, depending on the object type used to invoke it

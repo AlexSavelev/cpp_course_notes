@@ -2,19 +2,12 @@
 - Примеры: `std::any`, `std::function`, `void*` (and `std::byte`), `std::span`
 
 # `std::any`
+- Структура данных, которая позволяет хранить в себе что угодно
+
 ```cpp
 #include <any>
 #include <vector>
 
-int main() {
-    std::any a = 5;
-    std::vector<int> v = {1, 2, 3, 4 ,5};
-    a = std::move(v);
-    a = 'a';
-}
-```
-
-```cpp
 int main() {
     std::any a = 5;
     std::vector<int> v = {1, 2, 3, 4 ,5};
@@ -73,7 +66,6 @@ T& AnyCast(Any& a) {
 	return d_ptr->obj;
 }
 ```
-
 
 # `std::function`
 ### Usage

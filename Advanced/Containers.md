@@ -39,6 +39,28 @@ l.push_back(2);
 
 _**Sol**_: создаем класс `BaseNode { *next, *prev }`, а `Node` - наследник `BaseNode` с `T value`
 - По умолчанию `next` и `prev` у фейковой ноды - ссылки на саму себя
+
+```cpp
+struct List {
+  private:
+	struct BaseNode {
+	    BaseNode* next_node;
+	    BaseNode* prev_node;
+	};
+
+	struct Node: BaseNode {
+	    T value;
+	};
+
+  public:
+    List() {
+        fake_node.next_node = &fake_node;
+        fake_node.prev_node = &fake_node;
+    }
+
+    BaseNode fake_node;
+}
+```
 ### Доступ к элементам
 - `front`/`back`. Возвращает первый/последний элемент. В случае пустого листа - UB. Работает за $O(1)$
 ### Модифицирующие операции
@@ -63,15 +85,33 @@ _**Sol**_: создаем класс `BaseNode { *next, *prev }`, а `Node` - н
 
 # `std::map`
 - _**Def:**_ Отсортированный по ключу ассоциативный контейнер который хранит пары ключ-значение. Внутри обычно используется красно-черное дерево поиска.
-- `Node { kv, left, right, parent, is_red }`
-	- `kv` -> `std::pair<const Key, Value> kv;`
+
 - Итератор к пустой `map`'е также можно реализовать через фейковую ноду - "самую правую"
 - _**Sol**_: создаем класс `BaseNode { *left, *right, *parent }`, а `Node` - наследник `BaseNode` с `kv` и `is_red`
+```cpp
+template <typename Key, typename Value>
+class map {
+    struct BaseNode {
+        Nove* left;
+        Node* right;
+        Node* parent;
+    };
+
+    struct Node: BaseNode {
+        std::pair<const Key, Value> kv;
+        bool is_red;
+    };
+};
+```
+- Тогда `begin` - это самый левый ребенок дерева, а `end` - это `fake_node`
 - _**Note**_: Поскольку имеем дело с `const Key`, лучше в `range-base for`'е использовать `auto`
 ### Доступ к элементам
 - `index[]` - доступ по ключу. Модифицрует контейнер - если значения с таким ключом не существует то создает его (кладет туда `Value()`). Работает за $O(logn)$
 - `at` - доступ по ключу. Если значения с таким ключом не существует то выкидывает ошибку. Работает за $O(logn)$
 - `find` - возвращает итератор на пару с нужным ключем. Если ключа нет возвращает `end()`. Работает за $O(logn)$
+
+- `lower_bound` - возвращает итератор на первый элемент, ключ которого $>= key$
+- `upper_bound` - $<= key$
 ### Модифицирующие операции
 - `insert`/`emplace`: вставка по итератору. Работает за $O(logn)$
 - `erase`: удаление по итератору: $O(logn)$
@@ -79,10 +119,10 @@ _**Sol**_: создаем класс `BaseNode { *next, *prev }`, а `Node` - н
 - Категория: BidirectionalIterator
 
 # `std::set`
-- _**Def:**_ Множество элементов. По сути это map без value
+- _**Def:**_ Множество элементов. По сути это `map` без `value`
 
 # `std::unordered_map`
-- _**Def:**_ Ассоциативный контейнер который хранит пары ключ-значение. Является хэш-таблицей
+- _**Def:**_ Ассоциативный контейнер, который хранит пары ключ-значение. Является хэш-таблицей
 ### Доступ к элементам
 - `index[]` - доступ по ключу. Модифицрует контейнер - если значения с таким ключом не существует то создает его (кладет туда `Value()`). Работает за $O(1)$ (не совсем честно).
 - `at` - доступ по ключу. Если значения с таким ключом не существует то выкидывает ошибку. Работает за $O(1)$ (не совсем честно).
@@ -107,8 +147,105 @@ _**Sol**_: создаем класс `BaseNode { *next, *prev }`, а `Node` - н
 - К экзу лучше выучить!
 ![Iterator invalidation](../assets/iterator_invalidation.png)
 
+# `std::vector`
+- Остановимся на некоторых важных с точки зрения восприятия методов
+- Далее будет использоваться placement-new, объяснение которой будет в Memory
+
+```cpp
+template <typename T>
+void Vector<T>::reserve(size_t n) {
+  if (n <= capacity_) {
+    return;
+  }
+
+  T* new_arr = reinterpret_cast<T*>(new int8_t[n * sizeof(T)]);
+  size_t i = 0;
+  try {
+    for (i < size_; ++i) {
+      new(new_arr + i) T(arr[i]);
+    }
+  } catch (...) {
+    for (size_t j = 0; j < i; ++j) {
+      (new_arr + j)->~T();
+    }
+    delete[] reinterpret_cast<int8_t*>(new_arr);
+    throw;
+  }
+
+  for (size_t i = 0; i < size_; ++i) {
+    (arr + i)->~T();
+  }
+  delete[] reinterpret_cast<int8_t*>(arr);
+
+  arr = new_arr;
+  capacity_ = n;
+}
+```
+- Можно писать `std::uninitialized_copy(arr_, arr_ + size_, new_arr);` и избавиться от двух циклов `for` в `try-catch`
+
+```cpp
+template <typename T>
+void Vector<T>::push_back(const T& value) {
+  if (size_ == capacity_) {
+    reserve(2 * capacity_);
+  }
+  new(arr + sz) T(value);
+  size_ += 1;
+}
+
+// ALSO (see MoveSemantics):
+template <typename T>
+void Vector<T>::push_back(T&& value) {
+  if (size_ == capacity_) {
+    reserve(2 * capacity_);
+  }
+  new(arr + sz) T(std::move(value));
+  size_ += 1;
+}
+```
+
+```cpp
+template <typename T>
+void Vector<T>::pop_back(const T& value) {
+  (arr + size_ - 1)->~T();
+  size_ -= 1;
+}
+```
+
+- Специализация под `vector<bool>`
+```cpp
+template <>
+class Vector<bool> {
+ public:
+  struct BitReference {
+    int8_t* cell;
+    uint8_t index;
+    BitReference& operator=(bool b) {
+      if (b) {
+        *cell |= (1u << num);
+      } else {
+        *cell &= ~(1u << num);
+      }
+    }
+    operator bool() const {
+      return *cell & (1u << num);
+    }
+  }
+
+  BitReference operator[](size_t i) {
+      return BitReference(arr_ + i / 8, i % 8);
+  }
+
+  // ...
+ private:
+  int8_t* arr;
+  size_t size_;
+  size_t capacity_;
+};
+```
+
 # String
-### std::string
+### `std::string`
 - gcc realization (`data*`, `size`, `padding`, `capacity`)
 - Смешная история:
 	- `if (data[size_] != 0) { data[size_] = '\0'; }`
@@ -138,8 +275,8 @@ private:
 
 #### SSO benchmark on Ubuntu
 ![SSO benchmark](../assets/SSO_benchmark.png)
-#### std::string SSO
-[Source](https://stackoverflow.com/questions/27631065/why-does-libcs-implementation-of-stdstring-take-up-3x-memory-as-libstdc/28003328#28003328)
+#### `std::string` SSO
+- [Source](https://stackoverflow.com/questions/27631065/why-does-libcs-implementation-of-stdstring-take-up-3x-memory-as-libstdc/28003328#28003328)
 
 | Compiler         | Stack space (bytes) | Heap space (bytes) | Capacity (char8_t / bytes) |
 | ---------------- | ------------------- | ------------------ | -------------------------- |
@@ -238,7 +375,7 @@ std::tuple<Types&&...> forward_as_tuple( Types&&... args ) noexcept;
 ```
 Constructs a tuple of references to the arguments in args suitable for forwarding as an argument to a function. The tuple has rvalue reference data members when rvalues are used as arguments, and otherwise has lvalue reference data members.
 
-### Каррирование
+# Каррирование
 ```cpp
 #include <iostream>
 #include <tuple>

@@ -1,4 +1,4 @@
-Умные указатели - указатели которые следят за освобождением ресурса. Построены на идиоме RAII.
+Умные указатели - указатели, которые следят за освобождением ресурса. Построены на идиоме RAII.
 - Умные указатели - это основной инструмент RAII для управления динамически выделяемой памятью в C++.
 
 # RAII
@@ -46,7 +46,7 @@ class UniquePtr {
     delete ptr_;
   }
 
-  UniquePtr(const UniquePtr&) = delete; // запрещаем копироваться
+  UniquePtr(const UniquePtr&) = delete;  // запрещаем копироваться
   UniquePtr& operator=(const UniquePtr&) = delete;
 
   UniquePtr(UniquePtr&& other): ptr_(other.ptr_) {other.ptr_ = nullptr; }
@@ -67,9 +67,8 @@ class UniquePtr {
 - Остальные методы очев
 
 ### Some moments
-1. `std::unique_ptr<int> p(new int[5]);` не будет нормально работать, так как в деструкторе будет вызван `delete p`. Нужно делать так: `std::uniqe_ptr<int[]>p(new int[5]);`
-2. А вообще начиная с C++17 для специализации с массивами есть квадратные скобки
-3. Даже константный `unique` возвращает просто указатель и ссылку (ввиду определения константности для классов)
+1. `std::unique_ptr<int> p(new int[5]);` не будет нормально работать, так как в деструкторе будет вызван `delete p`. Нужно делать так: `std::unique_ptr<int[]>p(new int[5]);`: начиная с C++17 для специализации с массивами есть квадратные скобки
+2. Даже константный `unique` возвращает просто указатель и ссылку (ввиду определения константности для классов)
 
 ### `deleter`
 - True `unique_ptr` signature is:
@@ -85,38 +84,14 @@ class UniquePtr;
 - Методы у него примерно такие же как у `unique_ptr`
 - Также `shared_ptr` должен уметь работать с кастомными `Deleter` и `Allocator`. Они бросаются в конструктор.
 
-```cpp
-template <typename T>
-class shared_ptr {
- public:
-  explicit shared_ptr(T* ptr) : ptr(ptr), count(new int(1)) {}
-
-  ~shared_ptr() {
-    if (count == nullptr) {
-      return;
-    }
-    --*count;
-    if (*count == 0) {
-      delete ptr;
-      delete count;
-    }
-  }
-
- private:
-  T* ptr = nullptr;
-  size_t* count = nullptr;
-};
-```
-- Остальное очев
-
-### `Deleter`
-- В самом `shared_ptr` мы будем хранить указатель на `BaseControlBlock`
+- Идея такова: в самом `shared_ptr` мы будем хранить указатель на `BaseControlBlock`
 ```cpp
 template <typename T>
 struct BaseControlBlock {
   T object;
   size_t shared_count;
   size_t weak_count;
+
   BaseControlBlock(const T&, size_t, size_t);
   virtual ~BaseControlBlock() = default;
 }
@@ -152,57 +127,10 @@ int main() {
 
 ### `std::make_shared`
 ```cpp
-template <typename T>
-class shared_ptr {
- public:
-  explicit shared_ptr(T* ptr);  // How to do?! To be continued...
-
-  ~shared_ptr() {
-    if (control_block_ == nullptr) {
-      return;
-    }
-
-    --control_block_->count;
-
-    if (control_block_->count == 0) {
-      delete control_block_;
-    }
-  }
-
- private:
-  template <typename U>
-  struct ControlBlock {
-    U object;
-    size_t count;
-  }
-
-  template <typename U, typename... Args>
-  friend shared_ptr<U> make_shared(Args&&... args);
-
-  shared_ptr(ControlBlock<T>* ptr): control_block_(control_block_) {}
-
-  ControlBlock<T>* control_block_;
-};
-
 template <typename T, typename... Args>
 shared_ptr<T> make_shared(Args&&... args) {
-  auto p = new ControlBlock(1, std::forward<Args>(args)...);
-  return shared_ptr<T>(p);
+  return shared_ptr<T>(details::MakeSharedTag{}, std::forward<Args>(args)...);
 }
-```
-
-#### Решение для конструктора от `ptr`
-```cpp
-template <typename T>
-struct BaseControlBlock {
-  T* ptr;
-  size_t* count;
-};
-template <typename T>
-struct MakeSharedControlBlock: BaseControlBlock<T> {
-  T obj;
-  MakeSharedControlBlock(): ptr(&obj) {}
-};
 ```
 
 # `weak_ptr`
@@ -227,7 +155,7 @@ int main() {
 - `weak_ptr` хоть и назван как указатель, однако он не ведет себя как таковой. Его нельзя разименовывать!
 - Он умеет делать только две вещи:
 	1. Отвечать на вопрос "Сколько еще шаредов указывает на объект"
-	2. По запросу создавать новый шаред на объект
+	2. По запросу создавать новый шаред на объект (опять-таки, если объект еще жив, т.е. есть шаред, на него ссылающийся)
 - Т.е. `weak_ptr` не владеет объектом и не учавствует в подсчете ссылок. Такая конструкция решает наши проблемы: просто используем `weak_ptr` для указания на родителей
 
 ```cpp
@@ -235,15 +163,18 @@ template <typename T>
 class weak_ptr {
  public:
   weak_ptr(const shared_ptr<T>& ptr): helper_(ptr.helper_) {}
+
   bool expired() const { return helper_->count == 0; }
+
   shared_ptr<T> lock() const { return expired() ? nullptr : shared_ptr<T>(helper_); }
+
  private:
   ControlBlock<T>* helper_ = nullptr;
 }
 ```
 
 - Также в `ControlBlock` нужен еще один счетчик: `weak_count`.
-- Теперь в деструкторе `shared_ptr` нужно удалять объект при обнулении `shared_count` и удалять весь блок при обнулении `weak_count`. В `weak_ptr` в методе `expired` мы можем смотреть на `shared_count`, а в деструкторе удалять блок если `weak_count` становится нулем
+- Теперь в деструкторе `shared_ptr` нужно удалять объект при обнулении `shared_count` и удалять весь блок при обнулении `shared_count + weak_count`. В `weak_ptr` в методе `expired` мы можем смотреть на `shared_count`, а в деструкторе удалять блок если `shared_count + weak_count` становится нулем
 
 # Implementation
 ```cpp
@@ -419,6 +350,7 @@ int main() {
 # `enable_shared_from_this`
 
 ### Problem
+- Хотим изнутри класса возвращать указатель на самого себя
 ```cpp
 struct Test {
 	std::shared_ptr<Test> GetSelfPtr() {
@@ -460,9 +392,10 @@ int main() {
 }
 ```
 
-Стандарт позволяет наследоваться от шаблонного класса, в качестве шаблонного параметра которого указывается сам класс
-Суть CRTP: наследуемся от шаблона с шаблонными параметром себя
+- Стандарт позволяет наследоваться от шаблонного класса, в качестве шаблонного параметра которого указывается сам класс
+- То есть суть CRTP такова: наследуемся от шаблона с шаблонными параметром себя
 
+- Решением нашей проблемы будет наследование от `std::enable_shared_from_this<T>`
 ```cpp
 struct S: public std::enable_shared_from_this<S> {
   shared_ptr<S> GetPtr() const {
@@ -493,6 +426,7 @@ shared_ptr(T* ptr) {
 }
 ```
 - На самом деле делать это надо и в конструкторе от `ControlBlock` тоже. Ну и конструктор `weak_ptr` нужен соответствующий
+
 # Касты умных указателей
 - Рассмотрим код
 ```cpp
@@ -504,7 +438,7 @@ int main() {
     std::shared_ptr<Base> b_ptr = ptr;
 }
 ```
-- Он это умеет.
+- Он это умеет
 
 ### All smart pointer casts
 - [Docs](https://en.cppreference.com/w/cpp/memory/shared_ptr/pointer_cast)

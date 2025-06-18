@@ -42,12 +42,15 @@ int main() {
 - В отличии от implementation defined, разработчики систем/компиляторов не обязаны в документации это поведение описывать
 - The behavior of the program varies between implementations, and the conforming implementation is not required to document the effects of each behavior.
 ```cpp
-void f() { std::cout << 1; }
-void g() { std::cout << 2; }
-void h() { std::cout << 3; }
+#include <iostream>
+
+int f() { std::cout << 1; return 0; }
+int g() { std::cout << 2; return 0; }
+int h() { std::cout << 3; return 0; }
 
 int main() {
-	cout << f() * g() + h(); // порядок вычислений значений аргументов функции
+  std::cout << f() * g() + h();
+  // порядок вычислений значений аргументов функции
 }
 ```
 - Examples

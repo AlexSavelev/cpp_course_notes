@@ -9,7 +9,6 @@
 	- Например, для фабрики компараторов
 - Call in place: `[](int x, int y){ return x + y; }(10, 10)`
 - Явное указание возвращаемого типа: `auto f = [](int x, int y) -> int { return x + y; }`
-	- Такое себе
 
 # Списки захвата
 ### Example - CE
@@ -24,38 +23,68 @@ int main() {
 ```cpp
 int main() {
 	int a = 10;
+	// Это называется "захватом переменной". По умолчанию они константные
 	[a](int x) { std::cout << a + x; }(10);  // 20
 }
 ```
 
 - Syntax: `[a, b, c](args){}`
 	- `a`, `b`, `c` - константные копии
-- Mutable
+- `mutable` сделает все захваченные переменные изменяемыми
 	- `[a, b, c]() mutable {}`
-	- Можно менять
 - By ref: `[&a, b, &c](int x) { ... }`
-	- `a`, `c` можно менять и будет работать как обычная ссылка
+	- `a`, `c` можно менять, т.е. будет работать как обычная ссылка
 
 # Type of lambda
 - Лямбда - класс с `operator() const`
-- `sizeof(lambda) == 1` - пустой класс с одним методом
+- `sizeof(any lambda) >= 1` - пустой класс с одним методом
 	- `[a](){}` - 4 байта (лежит копия `int a`)
 	- `[&a](){}` - 8 байт (лежит ссылка на `int`)
 - `typeid(lambda).name()`
 
-# Can
-- Copy: `auto f = ...; auto ff = f;`
-	- CE if f contains local-fields: `[a]`
-- Move
+# Operations with lambdas
+### Copy
+```cpp
+int main() {
+  int a = 10;
 
-# Список захвата для класса
-- Верно и для функций
-### Example
+  auto f = [a](int x, int y) { return x < y; };
+  auto ff = f;
+}
+```
+### Move
+==TODO==
+### Assign
+```cpp
+int main() {
+  int a = 10;
+
+  auto f = [a](int x, int y) { return x < y; };
+  auto ff = f;
+
+  ff = f;  // CE
+}
+```
+
+- С C++20 можно, если список захвата пуст
+```cpp
+int main() {
+  auto f = [](int x, int y) { return x < y; };
+  auto ff = f;
+
+  ff = f;
+}
+```
+
+# Список захвата
+### Захват полей класса и this
+- Мы можем захватывать ТОЛЬКО локальные переменные
+	- То есть глобальные переменные и поля объекта передать в capture-list мы не можем
 ```cpp
 class S {
 	int a = 1;
 	void foo() {
-		auto f = [this])(int x) { std::cout << a; return x; };
+		auto f = [this](int x) { std::cout << a; return x; };
 		// we can't write [a], because a is not local variable (we can't enter non-local variables)
 	}
 };
@@ -100,7 +129,9 @@ class S {
 };
 ```
 
-#### Захват всех локальных переменных - BAD CODE
+#### Захват всех локальных переменных
+- В том числе и `this`
+- BAD CODE!
 ```cpp
 struct S {
 	int a = 1;
@@ -110,7 +141,8 @@ struct S {
 };
 ```
 
-#### Захват всех локальных переменных по ссылке - BAD CODE
+#### Захват всех локальных переменных по ссылке
+- BAD CODE!
 ```cpp
 struct S {
 	int a = 1;

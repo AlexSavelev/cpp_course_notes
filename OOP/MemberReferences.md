@@ -14,12 +14,12 @@ struct S {
 };
 
 int main() {
-    int S::* p1 = &S::x;  // проектор 1
+    int S::* p1 = &S::x;  // проектор
 
     S s;
     std::cout << s.*p1;
 
-	void (S::* p2)(int) = &S::f;  // проектор 2
+	void (S::* p2)(int) = &S::f;  // указатель на метод
 
     S s;
     (s.*p2)(1);
@@ -30,6 +30,9 @@ int main() {
 ```
 <type> <class_name>::* <name> = &<class_name>::<field_name>
 ```
+- Технически, просто содержит offset расположения поля относительно начала объекта в памяти
+
+# Указатели на функции
 - Syntax for function pointers: 
 ```
 <type> (<class_name>::* <name>)(Arg1, Arg2, ...) = &<class_name>::<method_name>

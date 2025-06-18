@@ -14,7 +14,7 @@ struct Factorial<1, Mod> {
 static_assert(Factorial<1, 1>::value == 1);
 
 int main() {
-
+	return 0;
 }
 ```
 
@@ -23,27 +23,26 @@ int main() {
 - Не можем нормально эмулировать циклы - ограничены глубиной рекурсии
 - Код не интуитивный
 
-# Constexpr вычисления 
+# Constexpr вычисления
 ```cpp
 constexpr int factorial(int n, int mod) {
-    return N == 0 ? 1 : factorial(n-1, mod) * n % mod;
+    return n == 0 ? 1 : factorial(n - 1, mod) * n % mod;
 }
 
-static_assert(factorial(1,1) == 1);
+static_assert(factorial(1, 1) == 1);
 ```
 
-- Добавили к функции модификатор constexpr
-- В 11 стандарте это уже работает. Но можно писать только return что-то. Строчка может быть сколь угодно длинная, но должна быть одна
-- В 11 стандарте это работало как синтаксический сахар - все превращалось в шаблоны
+- Добавили к функции модификатор `constexpr`
+- В C++11 это уже работает. Но можно писать только `return` что-то. Строчка может быть сколь угодно длинная, но должна быть всего одна
+- В C++11 это работало как синтаксический сахар - все превращалось в шаблоны
 
-Начиная с 14го стандарта механизм constexpr функций сильно расширили. Теперь факториал можно считать вот так:
-
+Начиная с C++14 механизм `constexpr`-функций сильно расширили. Теперь факториал можно считать вот так:
 ```cpp
 constexpr int factorial(int n, int mod) {
     int result = 1;
     for (int i = 1; i <= n; ++i) {
         result *= i;
-        result *= mod;
+        result %= mod;
     }
     return result;
 }
@@ -51,6 +50,249 @@ constexpr int factorial(int n, int mod) {
 
 - Грубо говоря: завезли интерпретатор внутрь компилятора
 - Этот процесс называется constant evaluation - отдельный этап
+
+# Constexpr переменные
+- Все константы можно разделить на 2 категории:
+	1. Константы времени компиляции
+	2. Константы времени исполнения
+```cpp
+#include <iostream>
+
+int main() {
+    const int a = 5;
+    std::array<int, a> arr;  // OK
+
+	int temp;
+	std::cin >> temp;
+
+	const int b = temp;
+	std::array<int, b> arr2;  // CE
+}
+```
+
+На этапе компиляции известны следующие вещи:
+- Литералы (`1`, `1.0`, `1ull`, `'c'`, `"char"`)
+- Параметры шаблонов
+- Результат `sizeof`
+- `constexpr`-переменные
+
+Про последнее стоит отдельно поговорить
+```cpp
+int main() {
+    constexpr int x = 2 * 2;
+    std::array<int, x> arr; // OK
+}
+```
+- На `constexpr` переменные накладывается следующее ограничение: `constexpr` переменная должна иметь литеральный тип
+- Литеральный тип - это все базовые типы + некоторые другие, про которые поговорим позже
+
+- _**Note**_ С C++20 даже `vector` является литеральным типом, но про это попозже
+
+### `constexpr` - это не совсем `const`-qualifier
+```cpp
+constexpr int arr[] = {1, 2, 3};
+constexpr int* x = &arr[3];
+```
+
+Непонятно: к чему в данном случае относится `constexpr`:
+1. `constexpr int* x` -> `const int* x`
+2. `constexpr int* x` -> `int* const`
+
+```cpp
+constexpr int arr[] = {1, 2, 3};
+constexpr const int* x = &arr[3];  // добавили const
+```
+
+1. `constexpr int* x` -> `const int* x`
+2. `constexpr int* x` -> `int* const` - правильный ответ
+
+Вывод: `constexpr` не является частью типа, это аннотация (спецификатор)
+
+- То есть `constexpr` не меняет тип объекта. Например, `constexpr int x = 10;` все еще является переменной типа `int`, но с дополнительным свойством возможности компиляции во время компиляции
+
+# Constexpr функции
+- Есть [перечисление](https://en.cppreference.com/w/cpp/language/constexpr) того, что можно делать в `constexpr` функциях
+- `constexpr`-функции можно вызывать в runtime. Тогда они просто работают как обычные функции.
+- Если функция используется в compile-time контексте, то ее вызов будет в compile-time. В любых других случаях гарантии не дается.
+
+### `throw` в `constexpr`-функциях
+```cpp
+constexpr size_t Devide(size_t x, size_t y) {
+    if (y == 0) {
+        throw "y == 0";
+    }
+    return x / y;
+}
+```
+
+- Можно бросать `throw`, опять-таки, поскольку при компиляции известен весь flow функции
+- `error: expression ‘<throw-expression>’ is not a constant expression`
+
+==TODO== sem
+
+
+- _**Note**_ `constexpr` методы тоже можно (и во многих случаях даже нужно) объявлять
+
+# Литеральные типы
+- Наконец, вводим понятие литерального типа
+
+- _**Def**_ Тип является литеральным если:
+	1. У него есть `constexpr` деструктор
+	2. У него есть `constexpr` конструктор (не `copy` и не `move`)
+
+```cpp
+class Point {
+public:
+    constexpr Point(double x, double y) : x_(x), y_(y) {}
+    constexpr double getX() const { return x_; }
+    constexpr double getY() const { return y_; }
+
+public:
+    double x_;
+    double y_;
+};
+
+int main() {
+    constexpr Point p(10.5, 20.5);
+    static_assert(p.getX() == 10.5, "X coordinate should be 10.5");
+    static_assert(p.getY() == 20.5, "Y coordinate should be 20.5");
+}
+```
+
+# New в compile-time
+- Вектор с C++20 является литеральным типом. А значит, в compile-time как-то поддержали аллокацию.
+- Требования следующие: вы обязаны деаллоцировать всю память после выхода из главной внешней функции. Пример:
+
+```cpp
+constexpr int* GetInt(int value) {
+    return new int(value);
+}
+
+constexpr int foo() {
+    auto new_value = GetInt(10);
+    delete new_value;
+    return 10;
+}
+
+constexpr int test = foo();
+```
+
+==TODO== sem
+
+# Виртуальные функции в compile-time
+- Начиная с C++20 в compile-time можно использовать виртуальные функции (но не виртуальное наследование)
+
+```cpp
+struct Base {
+    constexpr Base() = default;
+    constexpr virtual ~Base() = default;
+
+    constexpr virtual int foo() { return 1; }
+};
+
+struct Derived: public Base {
+    constexpr Derived() = default;
+    constexpr ~Derived() override = default;
+
+    constexpr int foo() override { return 2; }
+};
+
+constexpr int foo() {
+    Derived d;
+    Base& b = d;
+    return b.foo();
+}
+
+static_assert(foo() == 2);
+```
+
+# Consteval и constinit
+
+### `consteval`
+- `constexpr`-функция предполагает, что она может вычислиться в runtime. Поэтому был придуман функционал для явного указания требования на вычисление в compile-time.
+- Чтобы гарантировать, что функция вызовется именно в compile-time, нужно явно сказать компилятору об этом: функции, помеченные `consteval`, обязаны выполнятся только на этапе компиляции
+
+```cpp
+consteval int foo(int n) { return n * n; }
+
+int main() {
+	constexpr int y = foo(10); // OK
+
+	int x = 10;
+	int xx = foo(x); // CE
+
+	int xxx = foo(10); // OK - CT-контекст виден
+}
+```
+
+### `constinit`
+- С `constinit` все сложней: этот модификатор указывает, что переменная должна быть инициализирована на этапе компиляции. При этом эту переменную можно менять.
+
+> The `constinit` specifier declares a variable with static or thread storage duration.
+
+- То есть можно объявлять только статические и глобальные переменные.
+
+```cpp
+#include <iostream>
+#include <string>
+
+struct LoggerConfig {
+    int logLevel;
+    std::string logPath;
+};
+
+// constinit указывает, что инициализация должна произойти на этапе старта программы
+constinit LoggerConfig globalLoggerConfig{3, "/var/log/myapp.log"};
+
+int main() {
+    // при запуске программы globalLoggerConfig уже инициализирован
+    std::cout << "Log Level: " << globalLoggerConfig.logLevel << std::endl;
+    std::cout << "Log Path: " << globalLoggerConfig.logPath << std::endl;
+
+    // так как это constinit, мы можем изменять значения после инициализации
+    globalLoggerConfig.logLevel = 4; // Допустимо
+
+    std::cout << "Updated Log Level: " << globalLoggerConfig.logLevel << std::endl;
+
+    // однако, следующий код не скомпилируется, если globalLoggerConfig был объявлен как constexpr
+    // constexpr LoggerConfig testConfig{1, "/test.log"};
+    // testConfig.logLevel = 2; // ошибка компиляции, т.к. constexpr не допускает изменений после инициализации
+    return 0;
+}
+```
+
+# `constexpr` переменные внутри `constexpr` функций
+
+- Рассмотрим пример
+```cpp
+template <typename T>
+consteval size_t foo(std::initializer_list<T> init) {
+    constexpr size_t init_size = init.size();  // CE
+    return init_size;
+}
+
+constexpr size_t n = foo({1, 2, 3});  // CE
+```
+- CE, потому что переменная `init` не является `constexpr` (и не может, так как это параметр функции)
+
+- Однако если убрать `constexpr`, все заработает
+```cpp
+template <typename T>
+consteval size_t foo(std::initializer_list<T> init) {
+    size_t init_size = init.size();
+    init_size += 1;  // Даже можно менять
+    return init_size;
+}
+
+constexpr size_t n = foo({1, 2, 3}); // OK
+```
+
+- То есть переменная `init_size` является `constexpr`, но правилами языка запрещено объявлять её таковой. Более того, мы получили `constexpr`-переменную, которую можно менять
+
+==TODO== sem
+
+
+
 
 
 
@@ -404,3 +646,20 @@ int main() {
 }
 ```
 ==TODO== listing
+
+
+==TODO==
+```cpp
+#include <iterator>
+
+template <typename Iterator>
+void my_advance(Iterator& iter, int n) {
+  if constexpr (std::is_same_v<typename std::iterator_traits<Iterator>::iterator_category, std::random_access_iterator_tag>) {
+    iter += n;
+  } else {
+    for (int i = 0; i < n; ++i) {
+      ++iter;
+    }
+  }
+}
+```

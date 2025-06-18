@@ -1,5 +1,5 @@
 - Читается в процессе изучения `Memory`
-- `new` - это абстракция над выделением памяти в C и работать с ней не очень удобно. Например: хотим для типа `MyType` чтобы `std::vector` выделял память одним способом, а `std::set` другим. С помощью перегрузок оператора new этого не добиться
+- `new` - это абстракция над выделением памяти в C и работать с ней не очень удобно. Например: хотим для типа `MyType` чтобы `std::vector` выделял память одним способом, а `std::set` другим. С помощью перегрузок оператора `new` этого не добиться
 - Поэтому в C++ появилась более высокоуровневая абстракция: аллокаторы. Это способ переопределить выделение памяти до момента обращения к оператору `new`
 
 # `std::allocator`
@@ -29,7 +29,7 @@ struct Allocator {
 
 # `allocator_traits`
 - [See more](https://en.cppreference.com/w/cpp/memory/allocator_traits)
-- Большинство методов у всех аллокаторов будут одинаковые (например `construct` и `destroy`) а еще внутри есть куча `using`, поэтому в C++ была добавлена специальная обертка `allocator_traits`
+- Большинство методов у всех аллокаторов будут одинаковые (например `construct` и `destroy`), а еще внутри есть куча `using`, поэтому в C++ была добавлена специальная обертка `allocator_traits`
 - `allocator_traits` -  это структура, которая шаблонным параметром принимает класс вашего аллокатора
 - Почти все методы и внутренние юзинги работают по прицнипу "взять у аллокатора если есть, если нет сгенерировать автоматически"
 
@@ -114,12 +114,11 @@ void Vector<T, Alloc>::reserve(size_t n) {
   arr_ = new_arr;
   capacity_ = n;
 }
-
 ```
 
 # Rebinding allocators
 - Example: in `List<T>` allocator is `Allocator<T>`, but we need to allocate `Note<T>`
-- Можно реализовать в аллокаторе и обращаться к ``Alloc::rebind<Node<T>::other`
+- Можно реализовать в аллокаторе и обращаться к `Alloc::rebind<Node<T>::other`
 ```cpp
 class Allocator {
   template <typename U>
@@ -150,30 +149,38 @@ PoolAlloc alloc2 = alloc1;
 - Не знаем, что требуется:
 	- Что `alloc2` просто должен работать как `PoolAlloc` и скопировал в себя настройки (размер пула и тд) из `alloc1`
 	- Или чтобы эти два аллокатора отвечали за один и тот же пул
+
+- Или еще:
+```cpp
+std::vector<int, PoolAlloc> v1;
+std::vector<int, PoolAlloc> v2 = v1;
+// Нужно ли копировать аллокатор, если да, то как?
+```
+
 - Для это есть несколько юзингов
 
 # Устройство аллокатора
 - [More about](https://en.cppreference.com/w/cpp/memory/allocator)
 
-| Type                                     | Definition                                                                                                      | Desc                                                 |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| `value_type`                             | `T`                                                                                                             |                                                      |
-| `pointer`                                | `T*`                                                                                                            | - deprecated in C++17<br>- removed in C++20          |
-| `const_pointer`                          | `const T*`                                                                                                      | - deprecated in C++17<br>- removed in C++20          |
-| `reference`                              | `T&`                                                                                                            | - deprecated in C++17<br>- removed in C++20          |
-| `const_reference`                        | `const T&`                                                                                                      | - deprecated in C++17<br>- removed in C++20          |
-| `size_type`                              | `std::size_t`                                                                                                   |                                                      |
-| `difference_type`                        | `std::ptrdiff_t`                                                                                                |                                                      |
-| `propagate_on_container_move_assignment` | `std::true_type`                                                                                                | C++11                                                |
-| `rebind`                                 | ```cpp<br>template< class U >  <br><br>struct rebind  <br>{  <br>    typedef allocator<U> other;  <br>};<br>``` | - deprecated in C++17<br>- removed in C++20          |
-| `is_always_equal`                        | `std::true_type`                                                                                                | C++11<br>- deprecated in C++23<br>- removed in C++26 |
+| Type                                                            | Definition                                                          | Desc                                                 |
+| --------------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------- |
+| `value_type`                                                    | `T`                                                                 |                                                      |
+| `pointer`                                                       | `T*`                                                                | - deprecated in C++17<br>- removed in C++20          |
+| `const_pointer`                                                 | `const T*`                                                          | - deprecated in C++17<br>- removed in C++20          |
+| `reference`                                                     | `T&`                                                                | - deprecated in C++17<br>- removed in C++20          |
+| `const_reference`                                               | `const T&`                                                          | - deprecated in C++17<br>- removed in C++20          |
+| `size_type`                                                     | `std::size_t`                                                       |                                                      |
+| `difference_type`                                               | `std::ptrdiff_t`                                                    |                                                      |
+| `propagate_on_container_*_assignment`<br>`*` - copy\|move\|swap | `std::true_type`                                                    | C++11                                                |
+| `rebind`                                                        | `template <class U> struct rebind { typedef allocator<U> other; };` | - deprecated in C++17<br>- removed in C++20          |
+| `is_always_equal`                                               | `std::true_type`                                                    | C++11<br>- deprecated in C++23<br>- removed in C++26 |
 
 - `is_always_equal : true_type`
 	- Всегда равен любому другому
 	- about `true_type` [see](https://en.cppreference.com/w/cpp/types/integral_constant)
 - `propagate_on_container_copy/move/swap_assignment : true_type`
 	- Говорит, надо ли при копировании/перемещении/swap'а объекта перетягивать и аллокатор (pool allocator for example)
-	- Но все равно аллокатор перетягиваются, если аллокаторы не равны:
+	- Но все равно аллокатор перетягивается, если аллокаторы не равны:
 ```cpp
 S& operator=(other) {
 	if(p_o_c_c_a || (!is_always_equal && alloc != other.alloc)) {
@@ -187,10 +194,11 @@ S& operator=(other) {
 
 ### Member types (самое интересное)
 
-| `allocator_type`                         | `Alloc`                                                                                 |
+| Member                                   | Type                                                                                    |
 | ---------------------------------------- | --------------------------------------------------------------------------------------- |
+| `allocator_type`                         | `Alloc`                                                                                 |
 | `value_type`                             | `Alloc::value_type`                                                                     |
-| `pointer`                                | `Alloc::pointer` if present, otherwise `value_type`                                     |
+| `pointer`                                | `Alloc::pointer` if present, otherwise `value_type*`                                    |
 | `propagate_on_container_copy_assignment` | `Alloc::propagate_on_container_copy_assignment` if present, otherwise `std::false_type` |
 | `propagate_on_container_move_assignment` | `Alloc::propagate_on_container_move_assignment` if present, otherwise `std::false_type` |
 | `propagate_on_container_swap`            | `Alloc::propagate_on_container_swap` if present, otherwise `std::false_type`            |
@@ -198,13 +206,22 @@ S& operator=(other) {
 
 ### Member functions (самое интересное)
 
-| Function                                       | Desc                                                            |
-| ---------------------------------------------- | --------------------------------------------------------------- |
-| `static allocate`                              | allocates uninitialized storage using the allocator             |
-| `static deallocate`                            | deallocates storage using the allocator                         |
-| `static construct`                             | constructs an object in the allocated storage                   |
-| `static destroy`                               | destructs an object stored in the allocated storage             |
-| `static select_on_container_copy_construction` | obtains the allocator to use after copying a standard container |
+| Function                                                                                           | Desc                                                            |
+| -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `static pointer allocate(Alloc& a, size_type n);`                                                  | allocates uninitialized storage using the allocator             |
+| `static void deallocate( Alloc& a, pointer p, size_type n );`                                      | deallocates storage using the allocator                         |
+| `template< class T, class... Args >`<br>`static void construct( Alloc& a, T* p, Args&&... args );` | constructs an object in the allocated storage                   |
+| `template< class T >` <br>`static void destroy( Alloc& a, T* p );`                                 | destructs an object stored in the allocated storage             |
+| `static Alloc select_on_container_copy_construction( const Alloc& a );`                            | obtains the allocator to use after copying a standard container |
+Поведение `select_on_container_copy_construction` следующее:
+- Если в аллокаторе определен метод `select_on_container_copy_construction`, то вызывается он
+- Если метод не определен, то возвращается тот же аллокатор
+### Member aliases
+
+| Type               | Definition                                                                                                                                                                    |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rebind_alloc<T>`  | `Alloc::rebind<T>::other` if present, otherwise `SomeAllocator<T, Args>` if this `Alloc` is of the form `SomeAllocator<U, Args>`, where `Args` is zero or more type arguments |
+| `rebind_traits<T>` | `std::allocator_traits<rebind_alloc<T>>`                                                                                                                                      |
 
 # Полиморфные аллокаторы
 

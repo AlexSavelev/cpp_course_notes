@@ -75,7 +75,7 @@ In C++17, the new rules prohibit interleaving. From `[intro.execution]`:
 
 This leaves us with two valid orderings: (1), (2), (3), (4) or (3), (4), (1), (2). It is unspecified which ordering is taken, but both of these are safe. All the orderings where (1) (3) both happen before (2) and (4) are now prohibited.
 
-### GCC ignores standard
+### Example
 ```cpp
 #include <iostream>
 

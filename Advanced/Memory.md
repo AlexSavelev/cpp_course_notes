@@ -107,7 +107,7 @@ _**Note**_ Перегружать глобальный `new` - плохо
 ### `new` full implementation
 
 ```cpp
-void* p = malloc(sizeof(T) * n)  // + align (because of C++ STD)
+void* p = malloc(sizeof(T) * n)  // + align (because of C++ standart)
 while (p == std::nullptr && new_handler) {
 	new_handler();
 	p = malloc(sizeof(T) * n;
@@ -176,12 +176,20 @@ _**Note**_ При выборе, какой оператор выбрать дл�
 - Если для типа определен кастомный оператор `new`/`delete` то placement new сгенерирован не будет
 
 ```cpp
+void* operator new(size_t, S* p) {
+  // construct object
+  return p;
+}
+```
+
+```cpp
 #include <memory>
 
 S* p = reinterpret_cast<S*>(operator new(sizeof(S))); // global new
 new(p) S();
 operator delete(p);
 ```
+==TODO== WTF
 
 # Allocators
 - see [[Allocators]] page

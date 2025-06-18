@@ -1,7 +1,6 @@
 - Появились в C++20
 # Problem overview
-- Понятно, что для `T` и `R` накладываются какие-либо условия (`R::begin/end`, `R::operator==(T)`, etc)
-- Хотим явно наложить условия, чтобы облегчить чтение ошибок
+- Рассмотрим код
 ```cpp
 template <typename R, typename T>
 bool contains(const R& range, const T& value) {
@@ -13,6 +12,8 @@ bool contains(const R& range, const T& value) {
   return false;
 }
 ```
+- Понятно, что для `T` и `R` накладываются какие-либо условия (`R::begin/end` с возможностью инкремента и разыменования, `R::operator==(T)`)
+- Хотим явно наложить условия, чтобы облегчить чтение ошибок
 
 # Possible solutions
 ### Интерфейсы
@@ -41,8 +42,23 @@ bool CheckEq(T&& lhs, U&& rhs) {
 - Однако ошибка по-прежднему плохо читается
 - К тому же, на каждое ограничение надо писать шаблонный аргумент
 
+### `if constexpr` и SFINAE
+```cpp
+template <typename T, typename U>
+bool CheckEq(T&& lhs, U&& rhs) {
+  if constexpr (!is_equality_comparable<T, U>::value) {
+    static_assert(false, "AAAAA");
+  } else {
+    return lhs == rhs;
+  }
+}
+```
+
+- Нужна новая ветка ифа на каждое ограничение
+- Можем сравнивать не через `==` а через `<` - соответственно опять получим кучу веток ифов
+
 # `requires`
-- В `requires` можно передать любое `constexpr->bool` выражение
+- В `requires` можно передать любое `constexpr-bool` выражение
 
 ```cpp
 template <typename T, typename U> requires is_equality_comparable<T, U>::value
@@ -70,7 +86,7 @@ requires ( parameter-list ﻿(optional) ) { requirement-seq }
 ### Solution
 ```cpp
 template <typename T, typename U>
-requires requires(T t, U u) {t == u; }
+requires requires(T t, U u) { t == u; }
 bool CheckEq(T&& lhs, U&& rhs) {
   return lhs == rhs;
 }
@@ -105,7 +121,21 @@ requires true
 void f(T x) {}
 ```
 
-- Решили проблему, которую с SFINAE не смогли решить (ввиду отсутствия определенности - что частное, а что общее)
+- Решили проблему с долгим написанием ограничений
+- Пример типичного SFINAE-constaint:
+```cpp
+template <typename T, typename = void>
+struct is_totally_ordered: std::false_type {};
+
+template <typename T>
+struct is_totally_ordered<T, std::void_t<
+  decltype(std::declval<T>() == std::declval<T>()),
+  decltype(std::declval<T>() <= std::declval<T>()),
+  decltype(std::declval<T>() < std::declval<T>())
+>> : std::true_type {};
+```
+
+- Однако по-прежднему не решили проблему с отсутствием определенности - что частное, а что общее
 ```cpp
 template <typename Iter>
 requires is_input_iterator_t<Iter>
@@ -124,24 +154,11 @@ int distance(Iter first, Iter last) {
   return last - first;
 }
 ```
-
-- Решили проблему с долгим написанием ограничений
-- Пример типичного SFINAE-constaint:
-```cpp
-template <typename T, typename = void>
-struct is_totally_ordered: std::false_type {};
-
-template <typename T>
-struct is_totally_ordered<T, std::void_t<
-  decltype(std::declval<T>() == std::declval<T>()),
-  decltype(std::declval<T>() <= std::declval<T>()),
-  decltype(std::declval<T>() < std::declval<T>())
->> : std::true_type {};
-```
+- Для RA итератора будут подходить обе функции, потому что наши ограничения не знают что такое частное-общее.
 
 # Concepts
 - Не хочется каждый раз писать одинаковый `requires`, если они повторяются
-- Формально, концепты - это языковая возможность сочитать разного вида ограничения и запихнуть их в одну сущность:
+- Формально, концепты - это языковая возможность сочитать разного вида ограничения и запихнуть их в одну сущность
 ```cpp
 template <typename From, typename To>
 concept convertible_to = std::is_convertible_v<From, To> && requires {
@@ -152,16 +169,6 @@ template <typename T>
 requires convertible_to<T, int>
 int foo() {...}
 ```
-
-```cpp
-requires (T t) {
-	t++;  // can be compiled?
-	typename T::value_type;  // defined?
-	{++t} -> std::same_as<T&>;
-	{++t} noexcept;
-	requires (...);
-}
-```
 ### Концепты из концептов
 ```cpp
 template <typename T, typename U>
@@ -170,14 +177,14 @@ concept ComparableWith = requires(T t, U u) {
   {t != u} -> convertible_to<bool>;
   {u == t} -> convertible_to<bool>;
   {u != t} -> convertible_to<bool>;
-}
+};
 
 template <typename T>
 concept Comparable = ComparableWith<T, T>;
 ```
 
 - На сами концепты вешать ограничения нельзя
-- А еще концепт считается объявленным только после полного выражения, то есть внутри определения концепта нельзя вызывать его самого.
+- А еще концепт считается объявленным только после полного выражения, то есть внутри определения концепта нельзя вызывать его самого
 - То есть нет рекурсивного определения
 
 ### Сокращенный синтаксис использования
@@ -324,7 +331,7 @@ P subsumes Q (включает в себя )
 ```cpp
 requires(T t, U u) {
   u + b; // true если u+v возможно (simple)
-  typename T::iner; // true если T::inner есть (type)
+  typename T::inner; // true если T::inner есть (type)
 }
 ```
 
@@ -398,6 +405,17 @@ int main() {
 }
 ```
 - **Замечание**: выражение внутри nested requires должно быть СТРОГО типа `bool`: компилятор не сможет привести, скажем, `int` к `bool`'у
+
+==TODO==
+```cpp
+requires (T t) {
+	t++;  // can be compiled?
+	typename T::value_type;  // defined?
+	{++t} -> std::same_as<T&>;
+	{++t} noexcept;
+	requires (...);
+}
+```
 
 
 ==TODO== [cppref](https://en.cppreference.com/w/cpp/language/requires)
