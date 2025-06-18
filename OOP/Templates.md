@@ -70,7 +70,7 @@ foo(1); // CE with type output: [with T = int]
 #### Example 1
 ```cpp
 template <typename T>
-void foo(T x) = delete;
+void f(T x) = delete;
 
 int x = 0;
 int& y = 0;
@@ -176,7 +176,7 @@ std::array<int, x> arr1; // OK (compile-time const)
 ```
 
 #### `auto` parameters
-- See `auto` templates in Templates page
+- See `auto` templates in this page
 
 ### Шаблонные параметры шаблонов
 - Например, если пишем свой `Stack` и ходим передавать в шаблонах, какой контейнер использовать в качестве адаптера

@@ -9,20 +9,24 @@
 - Бывает полезно при сортировках (например, сортируй точки по первой координате, затем по второй...)
 
 ```cpp
+#include <iostream>
+
 struct S {
-    int x = 0;
+  int x = 0;
+
+  void f(int val) { std::cout << "Called with value " << val << '\n'; }
 };
 
 int main() {
-    int S::* p1 = &S::x;  // проектор
+  int S::*p1 = &S::x;  // проектор
 
-    S s;
-    std::cout << s.*p1;
+  S s;
+  std::cout << s.*p1 << '\n';
 
-	void (S::* p2)(int) = &S::f;  // указатель на метод
+  void (S::*p2)(int) = &S::f;  // указатель на метод
 
-    S s;
-    (s.*p2)(1);
+  S s2;
+  (s2.*p2)(1);
 }
 ```
 

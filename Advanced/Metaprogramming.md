@@ -191,7 +191,7 @@ const bool has_method_construct_v = has_method_construct<T, Args...>::value;
 #include <type_traits>
 
 template <typename T>
-T&& declval() noexcept {
+constexpr std::add_rvalue_reference_t<T> declval() noexcept {
   static_assert(0, "Cringe");
 };
 
@@ -256,6 +256,67 @@ int main() {
   std::cout << is_equality_comparable_v<EqNotCmp>;
 
   return 0;
+}
+```
+
+### Практика: enable_if
+```cpp
+#include <iostream>
+#include <type_traits>
+#include <vector>
+#include <memory>
+
+template <bool B, typename T = void>
+struct EnableIf {
+  using Type = T;
+};
+
+template <typename T>
+struct EnableIf<false, T> {};
+
+template <bool B, typename T = void>
+using EnableIfT = typename EnableIf<B, T>::Type;
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+void foo() {
+  std::cout << "Integral\n";
+}
+
+template <typename T>
+struct S {
+  template <typename U = T, typename =  std::enable_if_t<std::is_integral_v<U>>>
+  void foo() {
+    std::cout << "Integral\n";
+  }
+};
+
+template <typename T>
+struct A {
+  template <typename U = T, typename = std::enable_if_t<std::is_integral_v<U>>>
+  A() {
+    std::cout << "Integral\n";    
+  }
+};
+
+int main() {
+  foo<int>();
+  // foo<double>();
+  //
+  S<int> s1;
+  s1.foo();
+
+  S<double> s2;
+  // s2.foo();
+
+  A<int> a;
+  // A<double> b;
+  //
+  std::cout << std::is_copy_constructible_v<int> << '\n';
+  std::cout << std::is_copy_constructible_v<std::vector<int>> << '\n';
+  std::cout << std::is_copy_constructible_v<std::unique_ptr<int>> << '\n';
+  std::cout << std::is_copy_constructible_v<std::vector<std::unique_ptr<int>>> << '\n';
+  std::vector<std::unique_ptr<int>> v1;
+  std::vector<std::unique_ptr<int>> v2(v1);
 }
 ```
 

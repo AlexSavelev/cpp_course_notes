@@ -221,10 +221,11 @@ struct less<void> {
   int operator()() const { return 3; }
 }
 ```
-- Вычисления в концптах ленивые, как и в обычных булевых операциях
+- Вычисления в концептах ленивые, как и в обычных булевых операциях
 
 - В стандарте есть определение отношения subsumes на концептах (вложение):
 	- _**Def**_ Констрейнт $P$ включает в себя констрейнт $Q$ если и только если для каждого дизъюнктивного условия $P_i$ в дизъюнктивной нормальной форме $P$ $P_i$ включает в себя каждое конъюктивное условие $Q_j$ в нормальной конъюктивной форме $Q$
+	- C++20 STD p.390
 
 - То есть в примере ниже `P` включает в себя `Q` и `R`
 ```cpp
@@ -304,21 +305,171 @@ int main() {
 	- Выбрасываем все `requires "false"`
 		- И если в overload set'е осталась хотя бы одна функция с `requires`, то все `non-requires` функции отбрасываются (согласно `rule 1`)
 	- Частное/общее
+
+#### Частное/общее
 ```c
 Частное / общее
-P subsumes Q (включает в себя )
+P subsumes Q (включает в себя)
 	=> Q более частное
 
-1) forall P subsumes P
-2) P vs Q
-	=> Строю КНФ и ДНФ
-	если forall P_i из КНФ и forall Q_j и ДНФ -> P_i subsumes Q_j
-	// TODO
+Строю КНФ и ДНФ
+if forall P_i из ДНФ, forall Q_j из КНФ -> P_i subsumes Q_j, то P subsumes Q
 
-По итогу получается ЧУМ
+По итогу получается ЧУМ (partial ordering) из всех подходящих концептов
 И если существует ровно одна перегрузка, которую можно поистине назвать частной над всеми остальными, то выбирается она.
 ```
 
+- Example
+```cpp
+#include <iostream>
+
+struct F1 { void f1() { std::cout << "f1\n"; } };
+struct F2 { void f2() { std::cout << "f2\n"; } };
+struct F3 { void f3() { std::cout << "f3\n"; } };
+
+template <typename... Mixin>
+struct F : Mixin... {};
+
+
+template <typename T> concept CallableF1 = requires (T t) { t.f1(); };
+template <typename T> concept CallableF2 = requires (T t) { t.f2(); };
+template <typename T> concept CallableF3 = requires (T t) { t.f3(); };
+
+template <typename T>
+  requires CallableF1<T>
+void call(T) { std::cout << "F1\n"; }
+
+template <typename T>
+  requires CallableF2<T>
+void call(T) { std::cout << "F2\n"; }
+
+template <typename T>
+void call(T) { std::cout << "Any\n"; }
+
+void test1() {
+  call(F<F1>{});  // F1
+  call(F<F2>{});  // F2
+  call(F<F3>{});  // Any
+  // call(F<F1, F2>{}); // ambiguous
+  call(F<F1, F3>{}); // F1
+}
+
+
+
+template <typename T>
+  requires CallableF1<T> || CallableF2<T>
+void call(T) { std::cout << "F1 || F2\n"; }
+
+// F1: КНФ - F1,  ДНФ - F1
+// F1 || F2: КНФ - (F1 || F2), ДНФ - (F1) || (F2)
+// F1 subsumes F1 и F1 subsumes F2  - false
+// (F1 || F2) subsumes F1 - true
+// F1 более частное
+
+void test2() {
+  call(F<F1>{});  // F1
+}
+
+
+
+template <typename T>
+  requires CallableF1<T> && CallableF2<T>
+void call(T) { std::cout << "F1 && F2\n"; }
+
+// F1 && F2: КНФ - (F1) && (F2), ДНФ - (F1 && F2)
+// F1 || F2: КНФ - (F1 || F2), ДНФ - (F1) || (F2)
+// F1 subsumes F1 и F1 subsumes F2 и F2 subsumes F1 и F2 subsumes F2  - false
+// (F1 || F2) subsumes (F1 && F2) - true
+// (F1 && F2) более частное
+
+void test3(){
+  call(F<F1, F2>{});  // F1 && F2
+}
+
+
+
+template <typename T>
+  requires CallableF1<T> && CallableF2<T>
+void call2(T) { std::cout << "F1 && F2\n"; }
+
+template <typename T>
+  requires CallableF2<T> && CallableF3<T>
+void call2(T) { std::cout << "F2 && F3\n"; }
+
+// F1 && F2: КНФ - (F1) && (F2), ДНФ - (F1 && F2)
+// F2 && F3: КНФ - (F2) && (F3), ДНФ - (F2 && F3)
+// F1 subsumes (F2 && F3) и F2 subsumes (F2 && F3) - false
+// F2 subsumes (F1 && F2) и F3 subsumes (F1 && F2) - false
+// ambiguous call F1 F2 F3
+
+void test4() {
+  // call2(F<F1, F2, F3>{});
+  std::cout << "ambiguous\n";
+}
+
+
+
+template <typename T>
+  requires CallableF1<T> && CallableF2<T>
+void call3(T) { std::cout << "F1 && F2\n"; }
+
+template <typename T>
+  requires CallableF2<T> || CallableF3<T>
+void call3(T) { std::cout << "F2 || F3\n"; }
+
+// F1 && F2: КНФ - (F1) && (F2), ДНФ - (F1 && F2)
+// F2 || F3: КНФ - (F2 || F3), ДНФ - (F2) || (F3)
+// F1 subsumes F2 и F1 subsumes F3 и F2 subsumes F2 и F2 subsumes F3 - false
+// (F2 || F3) subsumes (F1 && F2) - true
+// F1 and F2
+
+void test5() {
+  call3(F<F1, F2, F3>{});  // F1 && F2
+}
+
+
+template <typename T>
+  requires (CallableF1<T> && CallableF2<T>) || (CallableF1<T> && CallableF3<T>)
+void call4(T) { std::cout << "(F1 && F2) || (F1 && F3)\n"; }
+
+template <typename T>
+  requires CallableF1<T> && (CallableF2<T> || CallableF3<T>)
+void call4(T) { std::cout << "F1 && (F2 || F3)\n"; }
+
+// (a && b) || (c && d) = not( not( (a && b) || (c && d) ) ) = not( not(a && b) && not(c && d) )
+// = not( (not a || not b) && (not c || not d))
+// = not( (not a && not c) || (not a && not d) || (not b && not c) || (not b && not d) )
+// = not( not a && not c ) && not( not a && not d ) && not( not b && not c ) && not( not b && not d )
+// = (a || c) && (a || d) && (b || c) && (b || d)
+
+// (F1 && F2) || (F1 && F3): КНФ - F1 && (F1 || F2) && (F2 || F3), ДНФ - (F1 && F2) || (F1 && F3)
+// F1 && (F2 || F3): КНФ - F1 && (F2 || F3), ДНФ - (F1 && F2) || (F1 && F3)
+// F1 subsumes (F1 && F2) и F1 subsumes (F1 && F3) и ... - true
+// F1 subsumes (F1 && F2) и F1 subsumes (F1 && F3) и (F2 || F3) subsumes (F1 && F2) и (F2 || F3) subsumes (F1 && F3) - true
+// ambiguous
+
+void test6() {
+  // call4(F<F1, F2, F3>{});
+  std::cout << "ambiguous\n";
+}
+
+
+
+int main() {
+  std::cout << "TEST 1\n";
+  test1();
+  std::cout << "\nTEST 2\n";
+  test2();
+  std::cout << "\nTEST 3\n";
+  test3();
+  std::cout << "\nTEST 4\n";
+  test4();
+  std::cout << "\nTEST 5\n";
+  test5();
+  std::cout << "\nTEST 6\n";
+  test6();
+}
+```
 
 # Формы ограничений
 
@@ -420,6 +571,3 @@ requires (T t) {
 
 ==TODO== [cppref](https://en.cppreference.com/w/cpp/language/requires)
 ==TODO== cppstd p.125
-==TODO== cppstd p.390
-==TODO== семантические и синтаксические требования - см стандарт. Что должно удолвл для каждого концепта
-

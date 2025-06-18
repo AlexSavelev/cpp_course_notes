@@ -340,55 +340,14 @@ class transform_view : public view_interface<transform_view<Range, Fn>> {
 };
 ```
 
-==TODO== sem26 code listings
-
-# With pipe
-- `|` - operator pipe ==TODO==
-- ==TODO== кложуры (closure)
-- ==TODO== `enable_borrowed_range`
-
-```cpp
-take(transform(filter(vec, pred), pr), 10)
-
-// New syntax
-filter(v, pred) | transform(pr) | take(10)
-```
-
-- Цель: инвертировать views
-- Вводим `ViewAdapter`, который позволит писать 4 вариации объявления `FilterView`:
-1) `FilterView(v, pr)`
-2) `Filter(range, pred)`
-3) `Filter(pred)(range)`
-4) `range | Filter(pred)`
-
-```cpp
-template <R, P>
-Filter(R r, P p) {
-	return FilterView(r, p);
-}
-
-template <P>
-Filter(P p) {
-	return [P p /* perfect forwarding */](auto range) { return FilterView(r, p); }
-	// Вообще FilterClosure - то, что хранит предикат и располагает operator()
-}
-
-template <R>
-auto operator|(R r, FilterClosure<P> c) {
-	return c(r);
-	// Вообще c(std::ranges::all(r));
-}
-```
-
 # Range factories
 
 ## `std::ranges::all`
 - Самое главное - `std::ranges::all(r)`
 - Перегружно по концептам:
-
-1) Случай I. `r` уже view -> `return r;`
-2) Случай II. `r` - это l-value range -> `return reference_view(r);`
-3) Случай III. `r` - это r-value range -> `return owning_view(r);`
+	1) Случай I. `r` уже view -> `return r;`
+	2) Случай II. `r` - это l-value range -> `return reference_view(r);`
+	3) Случай III. `r` - это r-value range -> `return owning_view(r);`
 
 Поэтому при `vec | filter` `operator|` возвращает `views::all` от `filter`
 
@@ -409,10 +368,139 @@ auto operator|(R r, FilterClosure<P> c) {
 ## repeat
 - `repeat(3)` - постоянно возвращает `3`
 
+# Examples
+
+### Stride view
+```cpp
+#include <bits/iterator_concepts.h>
+#include <concepts>
+#include <iostream>
+#include <iterator>
+#include <ranges>
+#include <vector>
+
+template <typename T>
+concept Range = requires (T t) {
+  // t.begin();
+  // t.end();
+  std::ranges::begin(t);
+  std::ranges::end(t);
+};  // O*(1)
+// [begin, end)
+
+template <typename T>
+using iterator_t = decltype(std::ranges::begin(std::declval<T>()));
+
+template <typename T>
+using sentinel_t = decltype(std::ranges::end(std::declval<T>()));
+
+// Ranges in std
+// ALL stl containers
+// string
+// string_view
+// span (like a string_view, but for vector)
+// C static arrays
+// C++26 optional
+
+template <typename T>
+concept EnableView = std::derived_from<T, std::ranges::view_base> ||
+  std::derived_from<T, std::ranges::view_interface<T>>;
+
+template <typename T>
+concept View = Range<T> && std::movable<T> && EnableView<T>;
 
 
 
-==TODO== filter view
+template <std::ranges::range R>
+class StrideView : std::ranges::view_interface<StrideView<R>> {
+  struct Iter {
+    using difference_type = std::ptrdiff_t;
+    using iterator_category = std::forward_iterator_tag;
+    Iter(std::ranges::iterator_t<R> it,
+         std::ranges::sentinel_t<R> end,
+         std::size_t stride) : it_(it), end_(end), stride_(stride) {}
+
+    auto& operator*() { return *it_; }
+
+    Iter& operator++() {
+      for (std::size_t i = 0; i < stride_; ++i) {
+        if (it_ == end_) {
+          break;
+        }
+        ++it_;
+      }
+      return *this;
+    }
+
+    Iter operator++(int) {
+      Iter copy = *this;
+      for (std::size_t i = 0; i < stride_; ++i) {
+        if (it_ == end_) {
+          break;
+        }
+        ++it_;
+      }
+      return copy;
+    }
+
+    bool operator==(std::default_sentinel_t) const {
+      return it_ == end_;
+    }
+
+    std::ranges::iterator_t<R> it_;
+    std::ranges::sentinel_t<R> end_;
+    std::size_t stride_;
+  };
+
+ public:
+  using value_type = typename R::value_type;
+  using reference = typename R::reference;
+  using iterator = Iter;
+
+  StrideView(R& range, std::size_t stride)
+    : stride_(stride),
+      begin_(std::ranges::begin(range)),
+      end_(std::ranges::end(range)) {
+  } 
+
+  auto begin() { return Iter(begin_, end_, stride_); }
+  auto end() { return std::default_sentinel; }
+
+  std::size_t stride_;
+  std::ranges::iterator_t<R> begin_;
+  std::ranges::sentinel_t<R> end_;
+};
+
+template <typename T>
+void Print(T&) {
+  std::cout << __PRETTY_FUNCTION__ << '\n';
+}
+
+int main() {
+  std::vector<int> vec = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+  for (auto& elem : vec) {
+    std::cout << elem << ' ';
+  }
+  std::cout << "\n";
+
+  auto s1 = StrideView(vec, 2);
+  for (auto& elem : s1) {
+    std::cout << elem << ' ';
+  }
+  std::cout << '\n';
+
+  auto s2 = StrideView(s1, 3);
+  for (auto& elem : s2) {
+    std::cout << elem << ' ';
+  }
+  // 1 3
+  std::cout << "\n";
+
+  Print(s2);
+}
+```
+
+### Filter view
 ```cpp
 #include <cstddef>
 #include <iostream>
@@ -437,42 +525,48 @@ class FilterView : std::ranges::view_interface<FilterView<R, F>> {
     using value_type = std::iter_value_t<base_iterator_t>;
     using reference = std::iter_reference_t<base_iterator_t>;
     using iterator_category = std::forward_iterator_tag;
+    using iterator_concept = std::forward_iterator_tag;
 
-    Iterator(FilterView* ptr, base_iterator_t iter, base_sentinel_t sent)
-        : base_(ptr), iter_(iter), sent_(sent) {}
+    Iterator(FilterView* ptr, base_iterator_t iter, base_sentinel_t sent) :
+        base_(ptr), iter_(iter), sent_(sent) {}
 
     Iterator& operator++() {
       ++iter_;
       while (iter_ != sent_ && not base_->predicate_(*iter_)) {
         ++iter_;
       }
+      return *this;
     }
-    Iterator& operator++(int) {
+
+    Iterator operator++(int) {
       auto copy = *this;
       ++(*this);
       return copy;
     }
 
-    reference operator*() const { return *iter_; }
-    bool operator==(const std::default_sentinel_t& sent) const {
-      return iter_ == sent;
+    reference operator*() const {
+      return *iter_;
     }
+
+    bool operator==(const std::default_sentinel_t& sent) const {
+      return iter_ == sent_; 
+    }
+
   };
 
  public:
   FilterView() = default;
-
+  
   template <std::ranges::range R2, typename F2>
   FilterView(R2&& range, F2&& predicate)
-      : iter_(this, std::ranges::begin(range), std::ranges::end(range)),
-        predicate_(std::forward<F2>(predicate)) {}
+    : base_(std::forward<R2>(range)), iter_(this, std::ranges::begin(base_), std::ranges::end(base_)), predicate_(std::forward<F2>(predicate)) {}
 
   Iterator begin() {
     if (cached_) {
       return iter_;
     }
     cached_ = true;
-    if (not predicate_(*iter_)) {
+    if (iter_ != end() && not predicate_(*iter_)) {
       ++iter_;
     }
     return iter_;
@@ -480,37 +574,81 @@ class FilterView : std::ranges::view_interface<FilterView<R, F>> {
   auto end() const { return std::default_sentinel_t{}; }
 
  private:
+  R base_;
   bool cached_ = false;
   Iterator iter_;
   F predicate_;
 };
 
 template <std::ranges::range R2, typename F2>
-FilterView(R2&& range,
-           F2&& predicate) -> FilterView<std::decay_t<R2>, std::decay_t<F2>>;
+FilterView(R2&& range, F2&& predicate) -> FilterView<std::decay_t<R2>, std::decay_t<F2>>;
 
-void Print(auto container) {
+
+template <typename T>
+void Print(T& container) {
   for (auto elem : container) {
     std::cout << elem << '\n';
   }
-  std::cout << '\n';
+  std::cout << "\n\n";
 }
 
 template <std::size_t M>
-struct Predicator {
+class Predicate {
+ public:
   int y = 0;
+  int z = 10;
   bool operator()(auto x) {
     ++y;
-    std::cout << "y = " << y << '\n';
+    std::cout << "y = " << y << z << '\n'; 
     return x % M == 0;
   }
 };
 
 int main() {
-  std::vector<int> v = {1, 2, 3, 4, 5, 6, 7, 8};
-  // TODO: feature with begin()
-  auto filtered = FilterView(v, Predicator<2>{});
-  Print(filtered);
-  return 0;
+  std::vector v = {1, 2, 3, 4, 5, 6, 7, 8};
+  auto filtered = FilterView(v, Predicate<2>{});
+  auto filtered2 = FilterView(
+      FilterView(v, Predicate<2>{}),
+      Predicate<3>{});
+  Print(filtered2);
+}
+
+```
+
+# About pipe
+- `|` - operator pipe
+
+```cpp
+// Old syntax
+take(transform(filter(vec, pred), pr), 10)
+
+// New syntax
+filter(v, pred) | transform(pr) | take(10)
+```
+
+- Проблема разработки состоит в том, чтобы инвертировать views
+- Вводим `ViewAdapter`, который позволит писать 4 вариации объявления `FilterView`:
+1) `FilterView(v, pr)`
+2) `Filter(range, pred)`
+3) `Filter(pred)(range)`
+4) `range | Filter(pred)`
+
+```cpp
+template <R, P>
+Filter(R r, P p) {
+	return FilterView(r, p);
+}
+
+template <P>
+Filter(P p) {
+	return [P p /* perfect forwarding */](auto range) { return FilterView(r, p); }
+	// Вообще FilterClosure - то, что хранит предикат и располагает operator()
+}
+
+template <R>
+auto operator|(R r, FilterClosure<P> c) {
+	return c(r);
+	// Вообще c(std::ranges::all(r));
 }
 ```
+==TODO== checkout pipe
