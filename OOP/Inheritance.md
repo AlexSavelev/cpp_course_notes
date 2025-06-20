@@ -6,15 +6,15 @@ struct Base {
 	int x = 1;
 };
 
-struct Derived : Base { // default = public
+struct Derived : Base {  // default = public
 	int x = 2;
 };
 
 int main() {
 	Derived d;
-	std::cout << d.x; // 2
-	std::cout << d.Base::x; // 1
-	std::cout << sizeof(d); // 8 (int + int)
+	std::cout << d.x;  // 2
+	std::cout << d.Base::x;  // 1
+	std::cout << sizeof(d);  // 8 (int + int)
 }
 ```
 
@@ -156,7 +156,7 @@ The same happens with public, private and protected inheritance. Let's consider 
 Иначе говоря, про приватное наследование знает только наследник
 - [Source](https://stackoverflow.com/questions/860339/what-is-the-difference-between-public-private-and-protected-inheritance)
 
-==TODO== checkout with:
+На русском:
 - Public наследование - факт наследования известен всем
 - Protected наследование - факт наследования известен наследнику и его наследникам
 - Private наследование - факт наследования известен только наследнику
@@ -344,6 +344,7 @@ struct Derived: Base {
 # Casting to parent/child classes
 ### Приведение типов
 - ТОЛЬКО публичное наследование позволяет кастовать ребенка к родителю
+	- Даже если переопределить C-style operator Base в случае `protected`/`private` наследования
 ```cpp
 struct Base {
 	int x;
@@ -396,7 +397,7 @@ Derived* d_ptr = static_cast<Derived*>(&b); // UB - захватываем ли�
 # Множественное наследование
 `struct C: A, B { ... };`
 - Размещение в пямяти работает по следующему принципу: сначала родители в том порядке, в котором они унаследованы, потом наследники. С конструкторами и деструкторами то же самое.
-- `d` и `&s` могут численно не совпадать (если классы-родители не пустые) (потому что `Dad` лежит в `Son` правее начала на `sizeof(Mom))
+- `d` и `&s` могут численно не совпадать (если классы-родители не пустые) (потому что `Dad` лежит в `Son` правее начала на `sizeof(Mom))`
 ### Example
 ```cpp
 #include <iostream>
@@ -541,42 +542,8 @@ int main() {
 }
 ```
 
-# Dependent names
-Dependent names are characterized by a **dependency** on a template argument.
-
-```cpp
-#include <vector>
-
-void NonDependent() {
-  //You can access the member size_type directly.
-  //This is precisely specified as a vector of ints.
-
-  typedef std::vector<int> IntVector;  
-  IntVector::size_type i;
-
-  /* ... */
-}
-
-template <class T>
-void Dependent() {
-  // Now the vector depends on the type T. 
-  // Need to use typename to access a dependent name.
-
-  typedef std::vector<T> SomeVector;
-  typename SomeVector::size_type i;
-
-  /* ... */
-}
-
-int main() {
-  NonDependent();
-  Dependent<int>();
-  return 0;
-}
-```
-
-This is an example of a peculiar situation regarding the use of dependent names which appears quite frequently. Sometimes the rules governing the use of dependent names are not what one might instinctively expect.
-For instance, if you have a dependent class which derives from a depenent base, but within an scope in which a name from the base class apparently doesn't depent on the template, you might get a compiler error just like below.
+# Dependent names (continue)
+For instance, if you have a dependent class which derives from a dependent base, but within an scope in which a name from the base class apparently doesn't depend on the template, you might get a compiler error just like below.
 ```cpp
 #include <iostream>
 

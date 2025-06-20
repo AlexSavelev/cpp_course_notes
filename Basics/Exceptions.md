@@ -260,7 +260,7 @@ int main() {
 ```
 
 ### Function try block
-- То, что было до этого называется "Ordinary try block"
+- То, что было до этого, называется "Ordinary try block"
 - A function try block is a special kind of function body.
 - If an exception is thrown from its compound-statement or ctor-initializer (if any), the exception will be matched against the handlers (`catch`) in its handler-seq ﻿:
 ```cpp
@@ -327,7 +327,9 @@ int main() {
 	- Ничего не гарантируем
 - Слабая
 	- Данные не полетят и можно будет продолжать с ними работать
-- Сильная
+	- В случае возникновения исключений не должно быть никаких утечек ресурсов
+		- То есть состояние программы должно оставаться согласованным
+- Сильная (exception-safety)
 	- Состояние объекта не изменилось
 
 # Terminate
@@ -405,3 +407,36 @@ int main() {
 - Перемещающие операции не ошибаются!
 	- Конструкторы перемещения
 	- Присваивание по перемещению
+
+# Иерархия стандартных исключений
+```cpp
+#include <exception>
+
+class exception;
+```
+
+- Class members:
+	- constructor
+	- `virtual` destructor
+	- `operator=`
+	- `virtual const char* what() const noexcept`
+
+| Name                  | Desc        |
+| --------------------- | ----------- |
+| `logic_error`         |             |
+| `runtime_error`       |             |
+| `bad_typeid`          |             |
+| `bad_cast`            |             |
+| `bad_optional_access` | since C++17 |
+| `bad_expected_access` | since C++23 |
+| `bad_weak_ptr`        | since C++11 |
+| `bad_function_call`   | since C++11 |
+| `bad_alloc`           |             |
+| `bad_exception`       |             |
+| `bad_variant_access`  | since C++17 |
+- [Source](https://en.cppreference.com/w/cpp/error/exception.html)
+
+- На экзамен достаточно:
+	- `logic`
+	- `runtime`
+	- ==TODO==

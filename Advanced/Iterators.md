@@ -106,6 +106,7 @@ void Advance(Iter& it, int n) {
 
 # `std::copy`, `std::copy_if`
 - `std::copy(begin, end, out_begin)`
+- `std::copy_if(begin, end, out_begin, predicate)`
 
 # Output iterators & adapters
 
@@ -176,9 +177,10 @@ class istream_iterator {
 
   istream_iterator<T>& operator++() {
     in_ >> value;
+    return *this;
   }
 
-  T& opeartor*() {
+  T& operator*() {
     return value;
   }
 

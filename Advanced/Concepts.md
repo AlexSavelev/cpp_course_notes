@@ -77,7 +77,7 @@ Iter MinElement(Iter first, Iter second) {...}
 - Навешивание `requires` на non-templated функции запрещено
 	- _**Note**_ под non-templated подрузумевается отстутствие шаблонов впринципе. Можно навешивать `requires` на методы шаблонного класса
 
-- Syntax
+- Теперь про `requires`-expression. Syntax
 ```cpp
 requires { requirement-seq }
 requires ( parameter-list ﻿(optional) ) { requirement-seq }
@@ -196,6 +196,7 @@ template <typename T> requires AmazingConcept<T> void foo(T&);
 template <AmazingConcept T> void foo(T&);
 
 // Если у концепта несколько шаблонных аргументов
+// Порядок: T int double
 template <AmazingConcept<int, double> T> void foo(T&);
 ```
 

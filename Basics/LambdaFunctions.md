@@ -1,9 +1,10 @@
+- Since C++11
 # Syntax
 - `[](Arg1 arg1, Arg2 arg2, ...) { ...; return value; }`
 	- `[]` - список захвата
 	- `()` - список аргументов
 	- `{}` - тело лямбда-функции
-- `auto f = [](int x, int y) { return x + y }`
+- `auto f = [](int x, int y) { return x + y; }`
 	- `f(1, 2);`
 - `auto GetFunction() { return [](int x, int y) { return x + y; } };`
 	- Например, для фабрики компараторов
@@ -53,7 +54,6 @@ int main() {
 }
 ```
 ### Move
-==TODO==
 ### Assign
 ```cpp
 int main() {
@@ -209,6 +209,7 @@ int main() {
 }
 ```
 - In this example, the type of `f1` in `auto f1 = +[]{};` is therefore deduced to `int(*)(int)`. Now the second line is easy: For the second lambda/closure object, an assignment to the function pointer triggers the same conversion as in the first line. Even though the second lambda has a different closure type, the resulting function pointer is, of course, compatible and can be assigned.
+- Унарный оператор определен только для лямбд с empty capture list
 
 # Template lambdas
 ```cpp

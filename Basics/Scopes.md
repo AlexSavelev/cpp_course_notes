@@ -18,7 +18,7 @@ int main() {
 namespace N {
 	int f(int x);
 }
-int N::f(int x) { // Qualified ID
+int N::f(int x) {  // Qualified ID
 	...
 }
 ```

@@ -117,7 +117,7 @@ int main() {
 ```cpp
 template <typename T, typename... Args>
 uniqe_ptr<T> make_unique(Args&&... args) {
-  return uniqe_ptr<T>(new T(std::forward<Args>(args)...));
+  return unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
 int main() {

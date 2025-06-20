@@ -135,6 +135,9 @@ f<int&>(y); // int& & -> int&
 ### Pretty function
 - Позволяет показать информацию о вызываемой, уже инстанцированной, функции
 ```cpp
+#include <iostream>
+#include <string>
+
 template <typename T>
 void foo() {
   std::cout << __PRETTY_FUNCTION__ << '\n';
@@ -147,6 +150,10 @@ int main() {
 ```
 
 # Template parameters
+- Each parameter in template-parameter-list belongs to one of the following categories:
+	1. constant template parameter
+	2. type template parameter
+	3. template template parameter
 - Шаблонные параметры, как правило, пишутся стилем `CamelCase`
 	- `typename T`, `bool IsConst`, `size_t BucketSize`, `class Allocator`
 	- `typename` и `class` - это эквивалетные вещи, но пишем `typename`
@@ -235,8 +242,8 @@ void f() {
 - При `[T != int]`: declaration - взяли `X` из `S` и объявили указатель, который назвали `a`
 - При `[T = int]`: expression - взяли `X` из `S` и умножили на глобальную `a`
 - _**Def**_ Собственно, это и есть "проблема зависимых имен", здесь `X` зависит от `T`.
-### Solution v1
-- Есть следующее правило: если компилятор встречает зависимое имя и не может понять что это, то он по умолчанию считает что expression, поэтому если вызвать только `f()` то все будет ок
+### Solution
+- Есть следующее правило: если компилятор встречает зависимое имя и не может понять что это, то он по умолчанию считает что expression, поэтому если вызвать только `f<[T != int]>()`, то все будет ок
 - Если нужно, чтобы компилятор парсил зависимое имя как declaration, то нужно написать `typename` (это вторая роль слова `typename` в C++)
 ```cpp
 template <typename T>
@@ -245,7 +252,7 @@ void f() {
 }
 ```
 
-### Solution v2
+### Solution for templates
 - Рассмотрим еще пример:
 ```cpp
 template <typename T>
@@ -274,6 +281,43 @@ void f() {
     typename S<T>::template A<1,2> a;
 }
 ```
+
+### English variant
+Dependent names are characterized by a **dependency** on a template argument.
+
+```cpp
+#include <vector>
+
+void NonDependent() {
+  //You can access the member size_type directly.
+  //This is precisely specified as a vector of ints.
+
+  typedef std::vector<int> IntVector;  
+  IntVector::size_type i;
+
+  /* ... */
+}
+
+template <class T>
+void Dependent() {
+  // Now the vector depends on the type T. 
+  // Need to use typename to access a dependent name.
+
+  typedef std::vector<T> SomeVector;
+  typename SomeVector::size_type i;
+
+  /* ... */
+}
+
+int main() {
+  NonDependent();
+  Dependent<int>();
+  return 0;
+}
+```
+
+This is an example of a peculiar situation regarding the use of dependent names which appears quite frequently. Sometimes the rules governing the use of dependent names are not what one might instinctively expect.
+- [Source](https://stackoverflow.com/questions/1527849/how-do-you-understand-dependent-names-in-c)
 
 # Basic type traits
 - Шаблоны позволяют создавать метафункции (функции от типов)
@@ -444,7 +488,7 @@ int main() {
 ### Unpacking and features
 ```cpp
 print((tail + 1)...) // +1 к каждому аргументу
-sizeof...(tail) // sizeof пакета
+sizeof...(tail) // sizeof пакета (количество параметров)
 ```
 
 - `(<pack> <operator> ...)`
@@ -574,17 +618,17 @@ int main() {
 
 #### Example on `f("Hello")` invoke
 
-| Args                          | State                                      |
-| ----------------------------- | ------------------------------------------ |
-| `int`                         | Overload resolution failed ==TODO== cppref |
-| `double`                      | Overload resolution failed                 |
-| `T`                           | OK - `T = [char*]`                         |
-| `std::type_identity<T>`       | deduction failed                           |
-| `std::vector<T>`              | deduction failed                           |
-| `T` (and returns `T::size_t`) | substitution failed                        |
-| `int, int`                    | wrong number of args                       |
+| Args                          | State                      |
+| ----------------------------- | -------------------------- |
+| `int`                         | Overload resolution failed |
+| `double`                      | Overload resolution failed |
+| `T`                           | OK - `T = [char*]`         |
+| `std::type_identity<T>`       | deduction failed           |
+| `std::vector<T>`              | deduction failed           |
+| `T` (and returns `T::size_t`) | substitution failed        |
+| `int, int`                    | wrong number of args       |
 
-- Если нет шаблонов: name lookup, overload resolution only ==TODO==
+- Если нет шаблонов: name lookup, overload resolution only
 
 # Argument deduction
 - [More info](https://en.cppreference.com/w/cpp/language/class_template_argument_deduction)

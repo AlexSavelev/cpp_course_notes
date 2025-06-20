@@ -17,7 +17,7 @@ struct Allocator {
 	}
 	
 	template <typename... Args>
-	void construct(T* ptr, Args&&... args) { // Args&&`
+	void construct(T* ptr, Args&&... args) { // Args&&
 	    new(ptr) T(args...); // std::forward(args)
 	}
 
@@ -101,7 +101,7 @@ void Vector<T, Alloc>::reserve(size_t n) {
     for (size_t j = 0; j < i; ++j) {
       AllocTraits::destroy(alloc_, new_arr + j);
     }
-    AllocTraits::deallocate(alloc_, n);
+    AllocTraits::deallocate(alloc_, new_arr, n);
     throw;
   }
 

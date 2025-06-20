@@ -44,6 +44,7 @@ int foo() {
 ## static_cast
 - Выполняет преобразования, извесные компилятору
 - _**Note**_ `static` он потому что проверяет возможность конвертации на этапе компиляции
+- An explicit type conversion operator in C++ that performs conversions between related types, such as implicit conversions, user-defined conversions, and conversions within inheritance hierarchies
 ```cpp
 int a = 5;
 double d = static_cast<double>(a);

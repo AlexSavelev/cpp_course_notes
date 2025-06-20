@@ -12,7 +12,7 @@
 - Категория: Contiguous
 
 # `std::deque`
-- _**Def:**_ Набор элементов, который поддерживает вставку как в конец так и в начало. Хранит элементы в "бакетах"
+- _**Def:**_ Набор элементов, который поддерживает вставку как в конец, так и в начало. Хранит элементы в "бакетах"
 ### Доступ к элементам
 - `at`/`[]`: возвращает элемент по индексу (в первом случае выполняется проверка индекса). Работает за $O(1)$
 - `front`/`back`. Возвращает первый/последний элемент. В случае пустого дека - UB. Работает за $O(1)$
@@ -84,7 +84,7 @@ struct List {
 - Категория: ForwardIterator
 
 # `std::map`
-- _**Def:**_ Отсортированный по ключу ассоциативный контейнер который хранит пары ключ-значение. Внутри обычно используется красно-черное дерево поиска.
+- _**Def:**_ Отсортированный по ключу ассоциативный контейнер, который хранит пары ключ-значение. Внутри обычно используется красно-черное дерево поиска.
 
 - Итератор к пустой `map`'е также можно реализовать через фейковую ноду - "самую правую"
 - _**Sol**_: создаем класс `BaseNode { *left, *right, *parent }`, а `Node` - наследник `BaseNode` с `kv` и `is_red`
@@ -218,19 +218,22 @@ template <>
 class Vector<bool> {
  public:
   struct BitReference {
-    int8_t* cell;
-    uint8_t index;
     BitReference& operator=(bool b) {
       if (b) {
-        *cell |= (1u << num);
+        *cell |= (1u << index);
       } else {
-        *cell &= ~(1u << num);
+        *cell &= ~(1u << index);
       }
     }
+
     operator bool() const {
       return *cell & (1u << num);
     }
-  }
+
+   private:
+    int8_t* cell;
+    uint8_t index;
+  };
 
   BitReference operator[](size_t i) {
       return BitReference(arr_ + i / 8, i % 8);
@@ -256,6 +259,8 @@ class Vector<bool> {
 ### SSO implementation
 - _**SSO**_ - is the Short / Small String Optimization
 - [See more](https://stackoverflow.com/questions/10315041/meaning-of-acronym-sso-in-the-context-of-stdstring)
+
+- Possible implementation
 ```cpp
 class string {
 public:
@@ -272,6 +277,34 @@ private:
     };
 };
 ```
+
+- На самом деле (G++)
+```cpp
+template <typename T>
+struct basic_string {
+    char* begin_;
+    size_t size_;
+    union {
+        size_t capacity_;
+        char sso_buffer[16];
+    };
+    // sizeof = 32; max_in-stack_string = 15
+};
+```
+
+#### Clang string
+- [Source](https://stackoverflow.com/questions/21694302/what-are-the-mechanics-of-short-string-optimization-in-libc)
+
+In the short form, there are 3 words to work with:
+- 1 bit goes to the long/short flag.
+- 7 bits goes to the size.
+- Assuming `char`, 1 byte goes to the trailing null (libc++ will always store a trailing null behind the data).
+
+This leaves 3 words minus 2 bytes to store a short string (i.e. largest `capacity()` without an allocation).
+- On a 32 bit machine, 10 chars will fit in the short string. sizeof(string) is 12.
+- On a 64 bit machine, 22 chars will fit in the short string. sizeof(string) is 24..
+
+A major design goal was to minimize `sizeof(string)`, while making the internal buffer as large as possible. The rationale is to speed move construction and move assignment. The larger the `sizeof`, the more words you have to move during a move construction or move assignment.
 
 #### SSO benchmark on Ubuntu
 ![SSO benchmark](../assets/SSO_benchmark.png)

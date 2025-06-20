@@ -230,3 +230,218 @@ int main() {
   return 1;
 }
 ```
+
+# Union
+- Этот функционал мы унаследовали из C. Можно объявить такой тип данных
+```cpp
+union U {
+  int x;
+  double y;
+  char c;
+};
+```
+
+- Когда мы просто объявляем юнион активным членом становится первый член
+```cpp
+int main() {
+  U u;  // в данный момент лежит int
+  std::cout << u.x;  // 0
+  u.d = 3.14;  // положили дабл
+  std::cout << u.d;  // вывело 3.14
+  std::cout << u.x;  // UB! (на самом деле будет реинтерпрет каст)
+}
+```
+
+- Проблемы появляются когда хотим положить в union поле с нетривиальными конструкторами/деструкторами, например `std::string`
+```cpp
+union U {
+  int x;
+  double y;
+  std::string s;
+  U(const char* s): s(s) {}
+  ~U() {}
+};
+```
+
+- Возникает следующая проблема: после смены активного члена юнион не уничтожает предыдущий активный член. То есть в следующем коде есть утечка памяти:
+```cpp
+union U {
+  int x;
+  double d;
+  std::string s;
+
+  U(const char* s): s(s) {}
+  ~U() {}
+};
+
+int main() {
+  U u = "abc";
+  std::cout << u.s;
+  u.d = 3.14;
+}
+```
+
+- Чтобы это поправить придется вызвать явно деструктор строки:
+```cpp
+  U u = "abc";
+  u.s.~basic_string();
+  u.d = 3.14;
+```
+
+- Следующая проблема
+```cpp
+union U {
+  int x;
+  double y;
+  std::string s;
+
+  U(double d): y(d) {}
+  U(const char* s): s(s) {}
+  ~U() {}
+};
+
+int main() {
+  U u = 3.14;
+  u.s = "abc";
+}
+```
+
+- Будет сегфолт потому что под `u.s` лежит какой-то мусор, а мы у него вызываем `оператор=`. Придется воспользоваться `placement new`
+
+```cpp
+union A {
+   A () { new (&s1) std::string ("hello world"); }
+  ~A () { s1.~basic_string<char> (); }
+
+  int         n1;
+  std::string s1;
+};
+```
+
+```cpp
+new (&u.s) std::string("Test");
+std::cout << u.s;
+```
+
+- Стоит так же упомянуть про анонимные юнионы:
+```cpp
+int main() {
+  union {
+    int a;
+    double b;
+  };
+
+  a = 10;
+  b = 20;
+}
+```
+
+# `std::variant`
+```cpp
+int main() {
+  std::variant<int, double, std::string> v;
+  v = "abc";
+
+  std::cout << std::get<std::string>(v);
+  std::cout << std::get<int>(v); // std::bad_variant_access
+
+  v = 5; // int положился и строка корректно уничтожился
+}
+```
+
+### Implementation
+```cpp
+template <typename... Types>
+union VariadicUnion {
+  // тут бы надо определить что такое get от пустого юниона
+
+  template <typename T>
+  void put(const T&) {
+    static_assert(false, "fail"); // костыль
+  }
+};
+
+template <typename Head, typename... Tail>
+union VariadicUnion<Head, Tail...> {
+  Head head;
+  VariadicUnion<Tail...> tail;
+
+  VariadicUnion() = default;
+  ~VariadicUnion() = default;
+
+  template <size_t N>
+  auto& get() {
+    if constexpr (N == 0) {
+      return head;
+    } else {
+      return tail.template get<N>();
+    }
+  }
+
+  template <typename T>
+  void put(const T& value) {
+    if constexpr (std::is_same_v<T, Head>) {
+      new(&head) T(value);
+    } else {
+      tail.template put(value);
+    }
+  }
+};
+
+template <typename T, typename... Types>
+struct VariantAlternatives {  // новая структура
+  using Derived = Variant<Types...>;
+
+  static constexpr index = index_by_type<T, Types...>;
+
+  VariantAlternatives(const T& value) {
+    auto variant = static_cast<Derived*>(this);
+    variant->storage.template put<T>(value);
+    ptr->current_index = index;
+  }
+
+  VariantAlternatives() = default;
+  ~VariantAlternatives() = default;
+};
+
+template <typename... Types>
+struct Variant
+  : public VariantAlternatives<Types, Types...>... {  // наследование!
+  VariadicUnion<Types...> storage;
+
+  ~Variant() {
+    (VariantAlternatives<Types, Types...>::destroy(), ...);
+  }
+
+  size_t current_index = 0;
+  using VariantAlternatives<Types, Types...>::VariantAlternatives...;  // работает с g++-11
+};
+
+template <size_t N, typename... Types>
+auto& get(Variant<Types...>& v) {
+  if (v.current_index == N) {
+      return storage.template get<N>();
+  }
+  throw std::bad_variant_access();
+}
+
+// Чтобы сделать get по типу придется написать метафункцию index_by_type которая из пакета аргументов достает i-й тип.
+
+template <size_t N, typename T, typename... Types>
+struct index_by_type_impl {
+  static constexpr size_t value = 0;
+};
+
+template <size_t N, typename T, typename Head, typename... Tail>
+struct index_by_type_impl<N, T, Head, Tail...> {
+  static constexpr size_t value = std::is_same_v<T, Head> ? N : index_by_type_impl<N+1, T, Tail...>::value;
+};
+
+template <typename T, typename... Types>
+static constexpr size_t index_by_type = index_by_type_impl<0, T, Types...>::value;
+
+// Тогда get по типу реализуется очевидно.
+
+// В целом это идейно и есть реализация варианта. Правда у нас тут есть UB. А именно в строчке variant->storage.template put(value);
+// В этот момент мы в конструкторе родителя, то есть еще не заинитен наследник. То есть поля storage еще не существует))). Выход следующий: сначала отнаследуемся от VariadicStorage а потом от всех наших родителей.
+```

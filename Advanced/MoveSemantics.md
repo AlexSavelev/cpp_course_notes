@@ -49,7 +49,7 @@ String(String&& s): str_(s.str_), size_(s.size_) {
 
 # Move `operator=`
 ```cpp
-String operator=(String&& s) {
+String& operator=(String&& s) {
   String tmp = std::move(s); // Пользуемся написанным move-конструктором
   swap(tmp); // Придется написать отдельно
   return *this;
@@ -121,7 +121,7 @@ _**Def**_: prvalue (pure rvalue) - это:
 - Общий смысл: что-то "временное", у чего нет имени
 
 _**Def**_: xvalue - это:
-1. Вызов функции, тип которой это rvalue-reference
+1. Вызов функции, возвращаемый тип которой это rvalue-reference
 2. и тд...
 - Общий смысл: относится к мувнутым объектам (отсюда и название - expired)
 
@@ -190,7 +190,6 @@ int main() {
 ```
 
 ### Summary examples
-==TODO== check
 ```cpp
 int x = 0;
 int&& y = 1;  // продление жизни как при const&
@@ -504,32 +503,3 @@ void g(T&& value = "Hello") {  // CE. It is a lvalue: located in .text: "Hello" 
 rvalue vs lvalue
 1. 
 2. если ф-ция возвращает rvalue ссылку, то ф-ция - lvalue (rvalue) expr
-
-==TODO== Forward
-```cpp
-#include <type_traits>
-
-template <typename T>
-T&& Forward(std::remove_reference<T>& value) {  // we can't accept rvalue
-  return static_cast<T&&>(value);
-}
-
-// forward<int&> -> int& && -> int& => int& forward(...)
-// forward<int> -> int && -> int&& => int&& forward(...)
-
-template <typename T>
-T&& Forward(std::remove_reference<T>&& value) {
-  return static_cast<T&&>(value);
-}
-
-template <typename T>
-void f(T&& value) {
-  Forward<T>(value);
-}
-
-int main() {
-  f(10);  // T=int
-  int x = 1;
-  f(x);  // T=int&
-}
-```

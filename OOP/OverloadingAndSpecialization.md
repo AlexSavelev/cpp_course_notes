@@ -60,7 +60,7 @@ int main() {
 ```
 
 # Template specialization
-- Syntax: `template <> declaration`
+- Syntax: `template <> [declaration]`
 - Any of the following can be fully specialized:
     1. function template
 	2. class template

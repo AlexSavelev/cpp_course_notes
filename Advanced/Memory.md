@@ -6,13 +6,15 @@
 - file mappings: DLL, .so
 ### Heap
 ### BSS segment
-- BSS - block starting symbol
+- BSS - Block Started by Symbol
 - uninitialized static vars: `static char* username;`
 ### Data segment
 - static vars inst. by program: `static char* a = "hello";` (статические и глобальные переменные, некоторые константы)
 ### Text segment (ELF)
 - bin image of the process (машинный код)
 
+# Dec
+`dec` is the summition of all three segments, `dec = .text + .data + .bss`.
 
 # About stack
 - Local variable кладется в стек при ее создании, при выходе из области видимости (scope'а) переменная снимается со стека
@@ -59,9 +61,9 @@ Also, `memset` is likely some very efficient inline assembler, meaning that the 
 // TL;DR =)
 # Dynamic memory
 - Иначе говоря, куча
-- operator new
+- `operator new`
 	- `int* a = new int(10);`
-- operator delete
+- `operator delete`
 	- `delete a;`
 - memory leak - утечка
 	- `int* a = new int(5);`
@@ -107,7 +109,7 @@ _**Note**_ Перегружать глобальный `new` - плохо
 ### `new` full implementation
 
 ```cpp
-void* p = malloc(sizeof(T) * n)  // + align (because of C++ standart)
+void* p = malloc(sizeof(T) * n);  // + align (because of C++ standart)
 while (p == std::nullptr && new_handler) {
 	new_handler();
 	p = malloc(sizeof(T) * n;
@@ -241,7 +243,7 @@ int main() {
 ```cpp
 new(ptr) S(args...) => S(new(ptr), args...)
 ```
-- Именно поэтому делание `operator new(size_t, S*)` другом не помогло - наш оператор никак не заведует вызовом конструктора. Грубо говоря, конструктор вызывается на строчке, где прописан placement-new
+- Именно поэтому делание `operator new(size_t, S*)` другом не помогло - наш оператор никак не заведует вызовом конструктора. Грубо говоря, конструктор вызывается на строчке, где прописан сам placement-new
 - Таким образом, конструктор в любом случае придется делать публичным
 
 #### Example

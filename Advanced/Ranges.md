@@ -82,7 +82,7 @@ template <typename T>
 using sentinel_t = decltype(ranges::end(declval<T&>()));
 ```
 
-- Категории диапозонов определяются иерархически
+- Категории диапазонов определяются иерархически
 ```cpp
 template <typename T> concept input_range = range<T> && input_iterator<iterator_t<T>>;
 ```
@@ -223,7 +223,7 @@ class FibIter {
   }
  private:
   int cur_ = 0;
-  int next_ = 0;
+  int next_ = 1;
 };
 ```
 

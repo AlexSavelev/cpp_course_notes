@@ -215,7 +215,7 @@ struct Base {
   virtual ~Base() = default;
 };
 
-struct Derived {
+struct Derived : Base {
   Derived() {
     array = new int[10];
   }
@@ -235,6 +235,7 @@ int main() {
 
 ### Аргументы по умолчанию
 - Аргумент по умолчанию берется и того класса, из которого мы метод вызываем
+	- Стоит вспомнить, что аргументы по умолчанию не относятся к функции - они относятся к самому контексту вызова (calling context)
 ```cpp
 #include <iostream>
 

@@ -16,7 +16,7 @@ const auto& y = x;
 
 ### Rules
 - Type is deduced using the rules for template argument deduction
-	- `auto y = x;` is the same that `f(T value); f(x);`
+	- `auto y = x;` is the same that `f(T value) <= f(x);`
 - Отличие только одно: `auto` может выводить `std::initializer_list`
 ```cpp
 template <typename T>
@@ -78,7 +78,7 @@ auto f(int& x) {
 ### trailing return type
 - Синтаксис, позволяющий писать тип возвращаемого объекта по-другому
 	- Полезно, когда этот тип зависит от аргументов
-- Честно берется `int`
+- Тут честно берется `int`
 ```cpp
 auto f(int x) -> int {
 	return x;
@@ -193,7 +193,7 @@ decltype(x) y;  // statement - смотрим на тип объекта
 ```
 - `decltype(expression)`
 ```cpp
-int& x;
+int x;
 decltype((x)) y;  // expression
 // y = [int&]
 ```
