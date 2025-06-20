@@ -220,6 +220,68 @@ int main() {
 }
 ```
 
+### Практика: `declval` и проверяем наличие `foo`
+```cpp
+#include <iostream>
+#include <type_traits>
+
+template <typename T>
+std::add_rvalue_reference_t<T> Declval() noexcept {
+  static_assert(false, "!");
+}
+
+template <typename T, typename... Args>
+struct has_method_foo {
+ private:
+  template <typename TT, typename... AArgs>
+  static auto check(int) -> decltype(Declval<TT>().foo(Declval<AArgs>()...),
+                                     int(0));
+
+  template <typename TT, typename... V>
+  static char check(...);
+
+ public:
+  static const bool value = std::is_same_v<decltype(check<T, Args...>(0)), int>;
+};
+
+template <typename T, typename... Args>
+const bool has_method_foo_t = has_method_foo<T, Args...>::value;
+
+struct S {
+  void foo() {}
+};
+
+// 01
+int main() { std::cout << has_method_foo_t<int> << has_method_foo_t<S>; }
+```
+
+- `size`:
+```cpp
+#include <iostream>
+#include <type_traits>
+#include <vector>
+
+template <typename T>
+std::add_rvalue_reference_t<T> Declval() noexcept {
+  static_assert(false, "!");
+}
+
+template <typename T, typename = std::void_t<>>
+struct HasSize : public std::false_type {};
+
+template <typename T>
+struct HasSize<T, std::void_t<decltype(Declval<T>().size())>>
+    : public std::true_type {};
+
+struct S {
+  void foo() {}
+};
+
+int main() {
+  std::cout << HasSize<int>::value << HasSize<std::vector<int>>::value;
+}
+```
+
 ### Практика: проверяем наличие оператора сравнения
 ```cpp
 #include <iostream>
@@ -389,10 +451,10 @@ struct is_base_of: std::conjuction<
 ```cpp
 namespace details {
     template<typename B>
-    std::true_type test_ptr_conv(const volatile B*);
+    std::true_type test_ptr_conv(const B*);
 
     template<typename>
-    std::false_type test_ptr_conv(const volatile void*);
+    std::false_type test_ptr_conv(const void*);
  
     template<typename B, typename D>
     auto test_is_base_of(int) -> decltype(test_ptr_conv<B>(static_cast<D*>(nullptr)));

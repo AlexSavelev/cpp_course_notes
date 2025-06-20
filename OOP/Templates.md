@@ -570,6 +570,39 @@ struct IsPrime {
 };
 ```
 
+- За $O(sqrt(n))$
+```cpp
+template <int N, int L = 1, int R = N>
+struct Sqrt {
+  static const int M = (L + R + 1) / 2;
+  static const int value =
+      (N < M * M) ? Sqrt<N, L, M - 1>::value : Sqrt<N, M, R>::value;
+};
+
+template <int N, int M>
+struct Sqrt<N, M, M> {
+  static const int value = M;
+};
+
+template <int N, int K>
+struct Helper {
+  static const bool value = (N % K != 0) && Helper<N, K - 1>::value;
+};
+
+template <int N>
+struct Helper<N, 1> {
+  static const bool value = true;
+};
+
+template <int N>
+struct IsPrime {
+  static const bool value = Helper<N, Sqrt<N>::value>::value;
+};
+
+static_assert(IsPrime<101>::value);
+static_assert(!IsPrime<1000>::value);
+```
+
 ### recursive template instantiation exceeded maximum depth
 - `IsPrime<10000000>::value;
 - Компилятор упадет с ошибкой "recursive template instantiation exceeded maximum depth" (по умолчанию 900)

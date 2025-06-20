@@ -282,14 +282,14 @@ int main() {
 
 ```cpp
 template <typename T>
-requires ( true; )
+requires true
 void foo(T) {}
 
 template <typename T>
 constexpr bool b = true;
 
 template <typename T>
-requires ( b<T>; )
+requires b<T>
 void foo(T) {}
 
 int main() {
@@ -492,6 +492,8 @@ requires(T t, U u) {
 ```cpp
 requires requires(T x) {
   {*x} -> std::convertible_to<typename T::inner>;
+
+  {x.clone()} -> std::same_as<T>;
 }
 ```
 

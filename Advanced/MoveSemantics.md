@@ -154,6 +154,7 @@ const int& y = 1;
 
 ### rvalue links
 - С rvalue-ссылками все наоборот: мы не можем инициализировать rvalue-ссылку с помощью rvalue
+	- [More](https://stackoverflow.com/questions/65552754/why-can-i-assign-a-value-to-a-rvalue-reference)
 - `T&&` is rvalue link (rvalue link is lvalue expr)
 - То есть следующий код не скомпилируется:
 ```cpp
@@ -333,7 +334,7 @@ void emplace_back(const Args&... args) {
 
 ```cpp
 template <typename... Arguments>
-void emplace_back(Arguments&& args) {
+void emplace_back(Arguments&&... args) {
   if (size_ == capacity_) {
     reserve(2 * capacity_);
   }

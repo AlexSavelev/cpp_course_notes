@@ -351,6 +351,15 @@ int main() {
 ```
 
 # `noexcept`
+- Как ключевое слово - навешивается на функцию
+	- Syntax: `noexcept` (=`noexcept(true)`), `noexcept(bool-expr)`
+- Как оператор - унарный оператор, возвращающий `true`, если и только если передаваемое `expr` может в теории бросать исключение
+```cpp
+#include <iostream>
+void baz() noexcept(sizeof(int) > 4) {}
+int main() { std::cout << noexcept(baz()); }  // false
+```
+
 ```cpp
 #include <exception>
 #include <ios>
@@ -443,6 +452,7 @@ class exception;
 	- `runtime`
 	- `bad_cast`
 		- `bad_any_cast`
+	- `bad_alloc`
 
 ### Пример своего исключения
 ```cpp
