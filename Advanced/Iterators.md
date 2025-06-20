@@ -27,6 +27,11 @@
 	- Random Access (`+=`, `-=`, `+`, `-`)
 	- Contiguous (from C++20) (данные в памяти непрерывны) (`vector`, `array`, `string`)
 		- Полезно, например, для `std::copy` (-> `memcpy` + `constructors()`)
+```cpp
+// Использование std::contiguous_iterator_tag для того же вектора
+using iterator_category = std::random_access_iterator_tag;
+using iterator_concept = std::contiguous_iterator_tag;
+```
 - Output
 	- `back_inserter(vec)`
 	- `*it = 3;  // push back to vector`
@@ -103,6 +108,8 @@ void Advance(Iter& it, int n) {
 # Reverse iterators
 - `vector<int>::reverse_iterator`
 - `v.rbegin();`
+
+- `using reverse_iterator = std::reverse_iterator<iterator>;`
 
 # `std::copy`, `std::copy_if`
 - `std::copy(begin, end, out_begin)`
