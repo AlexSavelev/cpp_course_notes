@@ -444,7 +444,7 @@ void print(const Head& head, const Tail&... tail) {
 ```cpp
 template <typename First, typename Second, typename... Types>
 struct is_same_many { // is_homogeneous
-    const static bool value = std::is_same_v<First, Second>::value && is_same_many<Second, Types...>::value;
+    const static bool value = std::is_same_v<First, Second> && is_same_many<Second, Types...>::value;
 };
 
 template <typename First, typename Second>

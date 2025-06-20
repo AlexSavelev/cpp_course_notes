@@ -416,7 +416,7 @@ class exception;
 ```
 
 - Class members:
-	- constructor
+	- constructors
 	- `virtual` destructor
 	- `operator=`
 	- `virtual const char* what() const noexcept`
@@ -438,5 +438,15 @@ class exception;
 
 - На экзамен достаточно:
 	- `logic`
+		- `invalid_argument`
+		- `out_of_range`
 	- `runtime`
-	- ==TODO==
+	- `bad_cast`
+		- `bad_any_cast`
+
+### Пример своего исключения
+```cpp
+struct MyException : std::logic_error {
+  MyException() : std::logic_error("My Exception Message") {}
+};
+```

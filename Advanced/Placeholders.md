@@ -86,7 +86,7 @@ auto f(int x) -> int {
 ```
 
 ### `auto` в аргументах функций
-- Since C++20
+- Since C++17
 - Буквально сокращение шаблонов
 	- То есть с `std::initializer_list` не прокатит
 ```cpp
@@ -113,6 +113,7 @@ void f(auto... x) {
 - Also see `auto` templates in Templates page
 
 - Также можно создавать шаблонные переменные
+- Since C++20
 ```cpp
 #include <iostream>
 
@@ -136,7 +137,7 @@ auto bar(auto y) {}  // C++17
 template <auto X>
 void baz() {}  // C++20
 
-template <typename T>
+template <typename T>  // => <T, auto, auto>
 void g(auto... x, T y) {
   std::cout << __PRETTY_FUNCTION__ << '\n';
 }

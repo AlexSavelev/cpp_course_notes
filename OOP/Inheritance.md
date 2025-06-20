@@ -344,7 +344,8 @@ struct Derived: Base {
 # Casting to parent/child classes
 ### Приведение типов
 - ТОЛЬКО публичное наследование позволяет кастовать ребенка к родителю
-	- Даже если переопределить C-style operator Base в случае `protected`/`private` наследования
+	- Даже если переопределить C-style `operator Base` в случае `protected`/`private` наследования
+	- Однако в случае `protected`/`private` наследования кастовать МОЖНО, но в детях/ребенке соответственно.
 ```cpp
 struct Base {
 	int x;
@@ -352,12 +353,30 @@ struct Base {
 
 struct Derived : Base {
 	int y;
-}
+};
 
 int main() {
 	Derived d;
 	Base b = d; // Base, который лежит в Derived (срезка при копировании)
 	Base& bb = d; // ссылка на Base, где на самом деле лежит Derived
+}
+```
+
+```cpp
+struct Base {};
+
+struct Derived : private Base {
+  void foo(Derived& d) { Base& b = d; }
+};
+
+struct Derived2 : public Derived {
+  void bar(Derived& d) { Base& b = d; }  // CE
+};
+
+int main() {
+  Derived d;
+
+  Base& b = d;  // CE
 }
 ```
 

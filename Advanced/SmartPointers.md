@@ -1,5 +1,11 @@
+В C++ исключения в конструкторах и деструкторах представляют собой потенциальную проблему, так как их обработка может быть сложной.
+Если исключение выбрасывается в конструкторе, то деструктор для создаваемого объекта не будет вызван, что может привести к утечкам ресурсов.
+
+
 Умные указатели - указатели, которые следят за освобождением ресурса. Построены на идиоме RAII.
 - Умные указатели - это основной инструмент RAII для управления динамически выделяемой памятью в C++.
+
+То есть это классы, реализующие RAII. (Handlers, Wrappers)
 
 # RAII
 - _Resource Acquisition Is Initialization_, or RAII, is a C++ programming technique which binds the life cycle of a resource that must be acquired before use (allocated heap memory, thread of execution, open socket, open file, locked mutex, disk space, database connection—anything that exists in limited supply) to the lifetime of an object.
