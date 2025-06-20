@@ -445,3 +445,212 @@ static constexpr size_t index_by_type = index_by_type_impl<0, T, Types...>::valu
 // В целом это идейно и есть реализация варианта. Правда у нас тут есть UB. А именно в строчке variant->storage.template put(value);
 // В этот момент мы в конструкторе родителя, то есть еще не заинитен наследник. То есть поля storage еще не существует))). Выход следующий: сначала отнаследуемся от VariadicStorage а потом от всех наших родителей.
 ```
+
+# `std::variant` V.2
+
+- Header
+```cpp
+#pragma once
+#include <iostream>
+
+namespace details {
+
+template <typename... Ts>
+union VariadicUnion;
+
+template <typename Head, typename... Tail>
+union VariadicUnion<Head, Tail...> {
+  Head value;
+  VariadicUnion<Tail...> tail;
+};
+
+template <>
+union VariadicUnion<> {};
+
+}  // namespace details
+
+template <typename... Ts>
+struct VariantFieldBase {
+  // details::VariadicUnion<Ts...> data;
+  std::size_t index = 0;
+};
+
+template <typename T, typename Derived>
+struct VariantBase {
+  VariantBase() {}
+  VariantBase(const T& value) {
+    std::cout << __PRETTY_FUNCTION__ << '\n';
+    // static_cast<Derived*>(this)->data;
+  } 
+};
+
+template <typename... Ts>
+class Variant : public VariantFieldBase<Ts...>, public VariantBase<Ts, Variant<Ts...>>... {
+public:
+  using VariantBase<Ts, Variant<Ts...>>::VariantBase...;
+};
+```
+
+- CPP
+```cpp
+// #pragma once
+
+#include <iostream>
+
+template <typename... Ts>
+class Variant;
+
+struct BadVariantAccess{};
+
+namespace details {
+
+template <typename... Ts>
+union VariadicUnion;
+
+template <typename Head, typename... Tail>
+union VariadicUnion<Head, Tail...> {
+  VariadicUnion() {}
+  ~VariadicUnion() {}
+
+  template <typename T>
+  T& get() {
+    if constexpr (std::is_same_v<Head, T>) {
+      return value;
+    } else {
+      return tail.template get<T>();
+    }
+  }
+
+  template <typename T, typename... Args>
+  T& emplace_construct(Args&&... args) {
+    if constexpr (std::is_same_v<Head, T>) {
+      std::construct_at(&value, std::forward<Args>(args)...);
+      return value;
+    } else {
+      return tail.template emplace_construct<T>(std::forward<Args>(args)...);
+    }
+  }
+
+  void destroy(std::size_t index) {
+    if (index == 0) {
+      std::cout << "called destroy at type " << typeid(Head).name() << '\n';
+      std::destroy_at(&value);
+    } else {
+      tail.destroy(index - 1);
+    }
+  }
+
+  Head value;
+  VariadicUnion<Tail...> tail;
+};
+
+template <>
+union VariadicUnion<> {
+  void destroy(std::size_t) {}
+};
+
+}  // namespace details
+
+template <typename T>
+struct VariantTraitsLength;
+
+template <typename... Ts>
+struct VariantTraitsLength<Variant<Ts...>> {
+  constexpr static std::size_t kValue = sizeof...(Ts);
+};
+
+template <typename T, typename Var>
+struct VariantTraitsIndex;
+
+template <typename T, typename Head, typename... Tail>
+struct VariantTraitsIndex<T, Variant<Head, Tail...>> {
+  constexpr static std::size_t kValue = 1 + VariantTraitsIndex<T, Variant<Tail...>>::kValue;
+};
+
+template <typename Head, typename... Tail>
+struct VariantTraitsIndex<Head, Variant<Head, Tail...>> {
+  constexpr static std::size_t kValue = 0;
+};
+
+
+template <std::size_t I, typename Var>
+struct VariantTraitsType;
+
+template <std::size_t I, typename Head, typename... Tail>
+struct VariantTraitsType<I, Variant<Head, Tail...>> {
+  using type = typename VariantTraitsType<I - 1, Variant<Tail...>>::type;
+};
+
+template <typename Head, typename... Tail>
+struct VariantTraitsType<0, Variant<Head, Tail...>> {
+  using type = Head;
+};
+
+
+template <typename Var>
+struct VariantTraits {
+  constexpr static std::size_t kLength = VariantTraitsLength<Var>::kValue;
+  template <typename T>
+  constexpr static std::size_t kIndex = VariantTraitsIndex<T, Var>::kValue;
+
+  template <std::size_t I>
+  using type = typename VariantTraitsType<I, Var>::type;
+};
+
+
+template <typename... Ts>
+struct VariantFieldBase {
+  details::VariadicUnion<Ts...> data;
+  std::size_t index = 0;
+};
+
+template <typename T, typename Derived>
+struct VariantBase {
+  VariantBase() { }
+  VariantBase(const T& value) {
+    static_cast<Derived*>(this)->data.template emplace_construct<T>(value);
+    static_cast<Derived*>(this)->index = VariantTraits<Derived>::template kIndex<T>;
+  } 
+};
+
+
+template <typename... Ts>
+class Variant : public VariantFieldBase<Ts...>, public VariantBase<Ts, Variant<Ts...>>... {
+public:
+  using VariantFieldBase<Ts...>::data;
+  using VariantFieldBase<Ts...>::index;
+  using VariantBase<Ts, Variant<Ts...>>::VariantBase...;
+
+  ~Variant() {
+    data.destroy(index);
+  }
+
+  template <typename T>
+  T& get() {
+    if (index != VariantTraits<Variant>::template kIndex<T>) {
+      throw BadVariantAccess{};
+    }
+    return data.template get<T>(); 
+  }
+};
+
+static_assert(VariantTraits<Variant<int, double, std::string>>::kLength == 3);
+static_assert(VariantTraits<Variant<int, double, std::string>>::kIndex<double> == 1);
+static_assert(VariantTraits<Variant<int, double, std::string>>::kIndex<std::string> == 2);
+static_assert(std::is_same_v<VariantTraits<Variant<int, double, std::string>>::type<0>, int>);
+static_assert(std::is_same_v<VariantTraits<Variant<int, double, std::string>>::type<1>, double>);
+static_assert(std::is_same_v<VariantTraits<Variant<int, double, std::string>>::type<2>, std::string>);
+
+
+int main() {
+  Variant<int, double, std::string> var("Hello");
+
+  std::cout << var.get<std::string>() << '\n';
+
+  try {
+    var.get<int>();
+  } catch (BadVariantAccess) {
+    std::cout << "catched BadVariantAccess\n";
+  }
+}
+```

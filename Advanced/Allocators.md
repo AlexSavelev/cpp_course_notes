@@ -118,7 +118,7 @@ void Vector<T, Alloc>::reserve(size_t n) {
 
 # Rebinding allocators
 - Example: in `List<T>` allocator is `Allocator<T>`, but we need to allocate `Note<T>`
-- Можно реализовать в аллокаторе и обращаться к `Alloc::rebind<Node<T>::other`
+- Можно реализовать в аллокаторе и обращаться к `Alloc::rebind<Node<T>>::other`
 ```cpp
 class Allocator {
   template <typename U>
@@ -161,24 +161,25 @@ std::vector<int, PoolAlloc> v2 = v1;
 
 # Устройство аллокатора
 - [More about](https://en.cppreference.com/w/cpp/memory/allocator)
+- [More about 2](https://learn.microsoft.com/ru-ru/cpp/standard-library/allocator-traits-class?view=msvc-170)
 
-| Type                                                            | Definition                                                          | Desc                                                 |
-| --------------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------- |
-| `value_type`                                                    | `T`                                                                 |                                                      |
-| `pointer`                                                       | `T*`                                                                | - deprecated in C++17<br>- removed in C++20          |
-| `const_pointer`                                                 | `const T*`                                                          | - deprecated in C++17<br>- removed in C++20          |
-| `reference`                                                     | `T&`                                                                | - deprecated in C++17<br>- removed in C++20          |
-| `const_reference`                                               | `const T&`                                                          | - deprecated in C++17<br>- removed in C++20          |
-| `size_type`                                                     | `std::size_t`                                                       |                                                      |
-| `difference_type`                                               | `std::ptrdiff_t`                                                    |                                                      |
-| `propagate_on_container_*_assignment`<br>`*` - copy\|move\|swap | `std::true_type`                                                    | C++11                                                |
-| `rebind`                                                        | `template <class U> struct rebind { typedef allocator<U> other; };` | - deprecated in C++17<br>- removed in C++20          |
-| `is_always_equal`                                               | `std::true_type`                                                    | C++11<br>- deprecated in C++23<br>- removed in C++26 |
+| Type                                                                           | Definition                                                          | Desc                                                 |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------- | ---------------------------------------------------- |
+| `value_type`                                                                   | `T`                                                                 |                                                      |
+| `pointer`                                                                      | `T*`                                                                | - deprecated in C++17<br>- removed in C++20          |
+| `const_pointer`                                                                | `const T*`                                                          | - deprecated in C++17<br>- removed in C++20          |
+| `reference`                                                                    | `T&`                                                                | - deprecated in C++17<br>- removed in C++20          |
+| `const_reference`                                                              | `const T&`                                                          | - deprecated in C++17<br>- removed in C++20          |
+| `size_type`                                                                    | `std::size_t`                                                       |                                                      |
+| `difference_type`                                                              | `std::ptrdiff_t`                                                    |                                                      |
+| `propagate_on_container_*_assignment`<br>`*` - copy\|move\|swap(no assignment) | `std::true_type`                                                    | C++11                                                |
+| `rebind`                                                                       | `template <class U> struct rebind { typedef allocator<U> other; };` | - deprecated in C++17<br>- removed in C++20          |
+| `is_always_equal`                                                              | `std::true_type`                                                    | C++11<br>- deprecated in C++23<br>- removed in C++26 |
 
 - `is_always_equal : true_type`
 	- Всегда равен любому другому
 	- about `true_type` [see](https://en.cppreference.com/w/cpp/types/integral_constant)
-- `propagate_on_container_copy/move/swap_assignment : true_type`
+- `propagate_on_container_copy/move/_assignment/swap : true_type`
 	- Говорит, надо ли при копировании/перемещении/swap'а объекта перетягивать и аллокатор (pool allocator for example)
 	- Но все равно аллокатор перетягивается, если аллокаторы не равны:
 ```cpp

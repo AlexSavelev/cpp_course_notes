@@ -186,7 +186,7 @@ decltype(x) u = x;
 
 ### 2 вида `decltype`
 Есть 2 типа `decltype`:
-- `decltype(statement)`
+- `decltype(entity)`
 ```cpp
 int x;
 decltype(x) y;  // statement - смотрим на тип объекта

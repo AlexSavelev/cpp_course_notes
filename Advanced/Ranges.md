@@ -67,6 +67,15 @@ auto v = std::ranges::istream_view<int>(std::cin)
 std::ranges::copy(v, std::ostream_iterator<int>{std::cout, " "});
 ```
 
+```cpp
+#include <ranges>
+
+namespace std {
+	namespace ranges { ... }         // improved algorithms
+	namespace ranges::views { ... }  // range adaptors
+}
+```
+
 _**Def**_ Range - это пара итератор + ограничитель
 
 ```cpp
@@ -265,7 +274,7 @@ ranges::copy_n(fib_view.begin(), 10, v.begin());
 std::string s = "Hello";
 auto sv = views::all(s); // -> ref_view<string>
 auto tk = views::take(sv, 5); // -> take_view<ref_view<string>>
-auto fv = ranges::subrange{fib_iter, std::unreachable_sentinel};
+auto fv = ranges::subrange{fib_iter, std::unreachable_sentinel_t{}};
 auto fib_tk = views::take(fv, 10);
 ```
 

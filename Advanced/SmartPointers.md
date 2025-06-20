@@ -420,7 +420,9 @@ class enable_shared_from_this {
   }
  private:
   weak_ptr<T> ptr_ = nullptr;
-}
+
+  friend class shared_ptr<T>;  // It works!
+};
 ```
 
 - Тогда при конструировании `std::shared_ptr` необходимо фиксироваться для создаваемого объекта

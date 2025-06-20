@@ -453,6 +453,16 @@ struct is_same_many<First, Second> { // is_homogeneous
 };
 ```
 
+### Types
+
+| Syntax       | Name                  | Becomes                       |
+| ------------ | --------------------- | ----------------------------- |
+| Unary right  | `pack op ...`         | `E1 op (... op (En-1 op En))` |
+| Unary left   | `... op pack`         | `((E1 op E2) op ...) op En`   |
+| Binary right | `pack op ... op init` | `E1 op (... op (En op I))`    |
+| Binary left  | `init op ... op pack` | `((I op E1) op ...) op En`    |
+
+
 ### Example
 ```cpp
 #include <iostream>
@@ -603,8 +613,30 @@ static_assert(IsPrime<101>::value);
 static_assert(!IsPrime<1000>::value);
 ```
 
+- Second variant
+```cpp
+template <int N, int K, bool F = (K * K > N)>
+struct Helper {
+  static constexpr bool value = (N % K != 0) && Helper<N, K + 1>::value;
+};
+
+template <int N, int K>
+struct Helper<N, K, true> {
+  static constexpr bool value = true;
+};
+
+template <int N>
+struct IsPrime {
+  static constexpr bool value = Helper<N, 2>::value;
+};
+
+static_assert(!IsPrime<100>::value);
+static_assert(!IsPrime<1001>::value);
+static_assert(IsPrime<10007>::value);
+```
+
 ### recursive template instantiation exceeded maximum depth
-- `IsPrime<10000000>::value;
+- `IsPrime<10000000>::value;`
 - Компилятор упадет с ошибкой "recursive template instantiation exceeded maximum depth" (по умолчанию 900)
 - Чтобы повысить глубину шаблонной рекурсии нужно запустить компиляцию с флагом `-ftemplate-depth=N`
 - Глубина рекурсии все равно не может быть слишком большой: оперативки компилятору не хватит
